@@ -1,5 +1,5 @@
 Package: coexnetwork
-Title: What the Package Does (One Line, Title Case)
+Title: Development of coexpression networks
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Carmen María",
@@ -7,10 +7,18 @@ Authors@R:
            role = c("aut", "cre"),
            email = "carmenmaria.hernandezp@um.es",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Nowadays, the way to create a coexpression network is to use Hierarchical Clustering. 
+      This package allows you to create a coexpression network using the glmnet algorithm. 
+      In addition, the network created will be relative to a covariate of the sample to be studied.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 URL: https//github.com/carmen-maria-hernandez/coexnetwork
 BugReports: https//github.com/carmen-maria-hernandez/coexnetwork/issues
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports: 
+    caret,
+    stats
