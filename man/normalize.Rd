@@ -2,8 +2,7 @@
 % Please edit documentation in R/dpreproc.R
 \name{normalize}
 \alias{normalize}
-\title{Normalize a vector
-Normalizes a vector by subtracting its mean and dividing by its standard deviation}
+\title{Normalize a vector}
 \usage{
 normalize(x)
 }
@@ -14,7 +13,6 @@ normalize(x)
 numeric vector
 }
 \description{
-Normalize a vector
 Normalizes a vector by subtracting its mean and dividing by its standard deviation
 }
 \examples{

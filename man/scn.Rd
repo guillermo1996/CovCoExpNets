@@ -2,10 +2,7 @@
 % Please edit documentation in R/dpreproc.R
 \name{scn}
 \alias{scn}
-\title{Scaling, centering and normalizing a matrix
-Scales a non-negative numerical matrix by applying the logarithm function
-and centers and normalizes its data. When applying the logarithm function
-it adds one to avoid calculating the logarithm of zero.}
+\title{Scaling, centering and normalizing a matrix}
 \usage{
 scn(data)
 }
@@ -16,7 +13,6 @@ scn(data)
 numerical matrix
 }
 \description{
-Scaling, centering and normalizing a matrix
 Scales a non-negative numerical matrix by applying the logarithm function
 and centers and normalizes its data. When applying the logarithm function
 it adds one to avoid calculating the logarithm of zero.
@@ -24,5 +20,5 @@ it adds one to avoid calculating the logarithm of zero.
 \examples{
 m <- matrix(1:4, nr= 2, nc = 2)
 colnames(m)<-c("1", "2")
-scn(matrix(1:4, nr= 2, nc = 2))
+scn(m)
 }
