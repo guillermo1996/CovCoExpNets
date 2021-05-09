@@ -23,4 +23,9 @@ Imports:
     mlbench,
     caret,
     stats,
-    nycflights13
+    nycflights13,
+    glmnet,
+    simEd,
+    MLmetrics,
+    BMTAR,
+    utils
