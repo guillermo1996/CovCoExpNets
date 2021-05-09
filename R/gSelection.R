@@ -1,6 +1,6 @@
 #' Detect main genes
 #'
-#' Given an expression matrix and a covariate, this functioin calculates the variables
+#' Given an expression matrix and a covariate, this function calculates the variables
 #' that best predict that covariate using glmnet algorithm
 #'
 #' @param data expression matrix
@@ -74,4 +74,27 @@ detectGenes <- function(data, covariate){
 
 }
 
-# coexpresionNetwork <- function()
+#' Co-expression network
+#'
+#' Calculate a coexpression network using the genes selected by the glmnet algorithm
+#' as the best predictors of a covariate.
+#'
+#' @param data expression matrix
+#' @param genes dataframe with the genes selected by the glmnet algorithm and their coefficients
+#'
+#' @return A list where for each gene selected by glmnet appears the 50 genes most correlated with it and that correlation
+#' @export
+coexpressionNetwork <- function(data, genes){
+  df <- calculateCorrelation(data, genes[1,1], 50)
+  for (i in 2:nrow(genes)) {
+    df <- rbind(df, calculateCorrelation(data, genes[i,1], 50))
+  }
+
+  all.genes = list()
+  for (i in 1:nrow(genes)) {
+    gen <- df[(i+(i-1)*50):(i+(i-1)*50+50), 2]
+    corr <- df[(i+(i-1)*50):(i+(i-1)*50+50), 3]
+    all.genes[[genes[i,1]]] = data.frame(gen,corr)
+  }
+  return(all.genes)
+}

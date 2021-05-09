@@ -9,12 +9,12 @@ calculateCorrelation(x, y, tam)
 \arguments{
 \item{x}{coexpression matrix}
 
-\item{y}{numeric vector}
+\item{y}{factor}
 
 \item{tam}{number}
 }
 \value{
-
+data.frame
 }
 \description{
 Given a coexpression matrix x and a gene (which is represented as a numerical vector) y from that matrix,

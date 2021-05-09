@@ -5,10 +5,10 @@
 #' The size of this subset is tam
 #'
 #' @param x coexpression matrix
-#' @param y numeric vector
+#' @param y factor
 #' @param tam number
 #'
-#' @return
+#' @return data.frame
 #' @export
 calculateCorrelation <- function(x,y, tam){
 
@@ -31,7 +31,7 @@ calculateCorrelation <- function(x,y, tam){
 #'
 #' @return summary of Jaccard indexes
 #' @export
-indiceJaccard <- function(df, tam){
+jaccardIndex <- function(df, tam){
   indJac <- numeric(sum(1:((nrow(df)/(tam+1))-1)))
   cont <- 1
 

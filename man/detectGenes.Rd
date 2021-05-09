@@ -15,6 +15,6 @@ detectGenes(data, covariate)
 Dataframe containing the variables selected by the glmnet algorithm and the coefficients associated with these variables
 }
 \description{
-Given an expression matrix and a covariate, this functioin calculates the variables
+Given an expression matrix and a covariate, this function calculates the variables
 that best predict that covariate using glmnet algorithm
 }
