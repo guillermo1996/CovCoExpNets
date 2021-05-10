@@ -13,6 +13,7 @@ normalize <- function(x){
   m <- mean(x)
   d <- stats::sd(x)
   x <- (x-m)/d
+  #return(c(median = m, standard.deviation = d, x))
   return(x)
 }
 

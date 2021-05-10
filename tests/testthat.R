@@ -1,4 +1,4 @@
 library(testthat)
-library(coexnetwork)
+library(SuCoNets)
 
-test_check("coexnetwork")
+test_check("SuCoNets")
