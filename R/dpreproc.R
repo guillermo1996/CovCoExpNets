@@ -63,7 +63,8 @@ rRedundantPredictors <- function(data){
     data <- data[-ind,]
   correlacion <- stats::cor(t(data))
   eliminar <- caret::findCorrelation(correlacion, cutoff=0.9)
-  data <- data[-eliminar,]
+  if(length(eliminar > 0))
+    data <- data[-eliminar,]
   return(data)
 }
 

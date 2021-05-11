@@ -28,5 +28,4 @@ Imports:
     glmnet,
     simEd,
     MLmetrics,
-    BMTAR,
     utils
