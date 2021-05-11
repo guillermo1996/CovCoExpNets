@@ -15,7 +15,7 @@ studied, so we are creating a supervised coexpression network.
 
 ## Installation
 
-You can install foofactors like so:
+You can install SuCoNets like so:
 
 ``` r
 install.packages("SuCoNets")
