@@ -4,12 +4,14 @@
 \alias{detectGenes}
 \title{Detect main genes}
 \usage{
-detectGenes(data, covariate)
+detectGenes(data, covariate, cvfit)
 }
 \arguments{
 \item{data}{expression matrix}
 
 \item{covariate}{numeric vector}
+
+\item{cvfit}{GMLNET object}
 }
 \value{
 Dataframe containing the variables selected by the glmnet algorithm and the coefficients associated with these variables

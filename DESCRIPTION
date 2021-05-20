@@ -28,4 +28,7 @@ Imports:
     glmnet,
     simEd,
     MLmetrics,
-    utils
+    utils,
+    ggplot2,
+    grDevices,
+    graphics

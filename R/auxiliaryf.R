@@ -44,3 +44,21 @@ jaccardIndex <- function(df, tam){
 
   return(summary(indJac))
 }
+
+
+#' Selects the indexes of the rows in x that match the rows in y
+#'
+#' @param x char vector
+#' @param y char vector
+#'
+#' @return numeric vector
+#' @export
+seleccionarFilas <- function(x,y){
+  indices = data.frame()
+  indices = which(x==y[1])
+
+  for(n in 2:length(y)){
+    indices[n] = which(x==y[n])
+  }
+  return(indices)
+}

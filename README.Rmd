@@ -28,24 +28,109 @@ so we are creating a supervised coexpression network.
 You can install SuCoNets like so:
 
 ``` r
-install.packages("SuCoNets")
+devtools::install_github("carmen-maria-hernandez/SuCoNets”)
 ```
 
 ## Example
 
 Suppose we have an expression matrix, data, where the columns are blood samples and the rows are genes, so that each sample is identified by the numerical values taken by the genes. Suppose we also have a numeric vector, age, with the age of each individual to whom each blood sample corresponds.
 
-An example of a typical execution of the functions contained in this package would be as follows:
+An example of a typical execution of the functions contained in this package would be as follows.
 
 
-``` r
+```{r, include=FALSE}
+expr.data <- read.delim("~/WholeBlood.txt.gz",header = T,row.names = 1)
+data.age.num <- read.csv("~/GTEx_Analysis_2017-06-05_v8_Annotations_SubjectPhenotypesDS.csv", header = T, sep = "\t")
+data.age.num <- data.age.num[-980,]
+
+filas <- data.age.num$SUBJID
+filas <- gsub("-", ".", filas)
+
+prefijos.muestras10 <- substr(colnames(expr.data), 1,10)
+prefijos.muestras9 <- substr(colnames(expr.data), 1,9)
+
+elementos.en.comun.long10 <- intersect(prefijos.muestras10,filas)
+elementos.en.comun.long9 <- intersect(prefijos.muestras9,filas)
+
+library(SuCoNets)
+
+indices.edad.long10 <- seleccionarFilas(filas, elementos.en.comun.long10)
+indices.edad.long9 <- seleccionarFilas(filas, elementos.en.comun.long9)
+
+indices.muestras.long10 <- seleccionarFilas(prefijos.muestras10, elementos.en.comun.long10)
+indices.muestras.long9 <- seleccionarFilas(prefijos.muestras9, elementos.en.comun.long9)
+
+data.characteristic <- data.age.num[c(indices.edad.long10,indices.edad.long9),c(3,4,11)]
+
+age = data.characteristic$AGE
+data = expr.data[, c(indices.muestras.long10,indices.muestras.long9)]
+
+nombresGenes <- read.csv("~/protcodinggenes.txt", sep = " ")
+nomGenesFichExpr <- rownames(data)
+nomGenesFichExpr <- unlist(lapply(strsplit(nomGenesFichExpr, "\\."),function(x){ return(x[1])}))
+genesAmbosFicheros <- intersect(nomGenesFichExpr, nombresGenes[,2])
+
+ind.nuevos.nombres <- seleccionarFilas(nombresGenes[,2], genesAmbosFicheros)
+ind.nombres.antiguos <-  seleccionarFilas(nomGenesFichExpr, genesAmbosFicheros)
+
+nuevos.nombres <- nombresGenes[ind.nuevos.nombres,1]
+data <- data[ind.nombres.antiguos, ]
+rownames(data) <- nuevos.nombres
+```
+
+```{r, include = F}
+rm(data.age.num,expr.data,elementos.en.comun.long10, elementos.en.comun.long9, filas, indices.edad.long10, indices.edad.long9, indices.muestras.long10, indices.muestras.long9, prefijos.muestras10, prefijos.muestras9, nombresGenes, nomGenesFichExpr, genesAmbosFicheros, ind.nuevos.nombres, ind.nombres.antiguos, nuevos.nombres)
+```
+
+
+We start by normalizing the vector containing the age with the function normalize and the expression matrix with the function scn and then eliminate redundant predictors. Note that the function normalize returns: first the mean of the vector we pass as parameter, then its standard deviation and then the vector, which we pass as parameter, normalized.
+
+
+``` {r}
 library(SuCoNets)
 age <- normalize(age)
+m <- age[1]
+d <- age[2]
+age <- age[-c(1,2)]
 data <- scn(data)
-
 data <- rRedundantPredictors(data)
-genes.seleccionados <- detectGenes(data,age)
+```
 
+
+Next, we calculate which seed produces the data partition (training set and test set) that gives the best results when running *GLMNET* algorithm, so we can use that partition to run *GLMNET* algorithm. With the function detectGenes we get the genes that *GLMNET* algorithm has selected as important for age prediction
+
+
+```{r}
+seed <- bestSeed(data,age)
+
+cvfit <- glmnetGenes(data,age, seed)
+glmnet::print.cv.glmnet(cvfit)
+
+genes.seleccionados <- detectGenes(data,age,cvfit)
+
+```
+
+
+Now let's look at a scatter plot with the predicted age and the actual age of both the test set and the train set. Note that the mean and standard deviation of the age must be passed as parameters to this function to be able to see in the scatter plot the ages in the real ranges.
+
+
+```{r}
+comparisonActualPredictedCovariate(data, age, m, d, cvfit, seed)
+```
+
+
+We can also obtain a representation of all individuals in the analysis according to their age. Each individual will be represented by a dot. The blue dots represent the youngest individuals and the red dots represent the oldest. The individuals whose age is between these two, will be represented by a color contained in the gradient of these two colors. In order to perform this representation, we use the genes that the GLMNET algorithm has selected, we perform a PCA and we plot the first two components of this PCA, which are the ones that explain the most variability in the data.
+
+
+```{r}
+distributionIndividualsCovariate (data, age, genes.seleccionados, m,d)
+```
+
+
+Finally, we compute the co-expression network with the function coexpressionNetwork.
+
+
+```{r}
 all.genes <- coexpressionNetwork(data, genes.seleccionados)
 
 ```
