@@ -69,7 +69,15 @@ distributionIndividualsCovariate <- function(data, covariate, selectedGenes, m, 
 
 }
 
-histGeneFreq <- function(){
+#' Histogram of gene frequencies
+#'
+#' @param data expression matrix
+#' @param covariate numeric vector
+#' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
+#'
+#' @return Summary of gene frequency information
+#' @export
+histGeneFreq <- function(data, covariate, selectedGenes){
   gs = as.character()
   semilla = 0
   contador = 1;
@@ -89,10 +97,10 @@ histGeneFreq <- function(){
 
     data.train.10 <-  t(data[,ind.train.10])
     data.test.10 <-  t(data[,-ind.train.10])
-    age.train.10 <-  age[ind.train.10]
-    age.test.10 <- age[-ind.train.10]
+    covariate.train.10 <-  covariate[ind.train.10]
+    covariate.test.10 <- covariate[-ind.train.10]
 
-    cvfit.10<- glmnet::cv.glmnet(data.train.10, age.train.10, alpha=1, family = "gaussian")
+    cvfit.10<- glmnet::cv.glmnet(data.train.10, covariate.train.10, alpha=1, family = "gaussian")
 
     coefic.10 <- as.matrix(stats::coef(cvfit.10,s="lambda.min"))
     filas.dist.cero.10 <- rownames(coefic.10)[which(coefic.10!=0)]
@@ -104,24 +112,24 @@ histGeneFreq <- function(){
     gs = c(gs, as.character(genes.seleccionados.10[,1]))
     semillas[contador] <- semilla
     genesSelect[contador] <- nrow(genes.seleccionados.10)
-    erroresTrain[contador] <- MLmetrics::RMSE(predict.cvfit.train.10, age.train.10)
-    erroresTest[contador] <- MLmetrics::RMSE(predict.cvfit.test.10, age.test.10)
+    erroresTrain[contador] <- MLmetrics::RMSE(predict.cvfit.train.10, covariate.train.10)
+    erroresTest[contador] <- MLmetrics::RMSE(predict.cvfit.test.10, covariate.test.10)
     contador = contador + 1
 
   }
 
   gs = as.factor(gs)
   gs.nuestros.genes <- data.frame(table(gs))
-  id <- seleccionarFilas(as.character(gs.nuestros.genes[,1]), as.character(genes.seleccionados[,1]))
+  id <- seleccionarFilas(as.character(gs.nuestros.genes[,1]), as.character(selectedGenes[,1]))
   gs.nuestros.genes <- gs.nuestros.genes[id,]
   as.data.frame(gs.nuestros.genes[order(gs.nuestros.genes[,2], decreasing = T),])
 
 
   t <- data.frame(num.apariciones.genes = gs.nuestros.genes[,2])
 
-  ggplot2::ggplot(data=t, aes(num.apariciones.genes)) +
+  ggplot2::ggplot(data=t, ggplot2::aes(num.apariciones.genes)) +
           ggplot2::geom_histogram(col="light blue",fill="light blue",alpha=0.75, breaks=seq(0, 10, by=1)) +
-          ggplot2::labs(title="Histograma frecuencia genes", x = "Número de veces que se repiten los genes", y="Número de genes")
+          ggplot2::labs(title="Histograma frecuencia genes", x = "Num de veces que se repiten los genes", y="Num de genes")
 
 
 
