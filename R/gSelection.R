@@ -90,19 +90,20 @@ detectGenes <- function(data, covariate, cvfit){
 #'
 #' @param data expression matrix
 #' @param genes dataframe with the genes selected by the glmnet algorithm and their coefficients
+#' @param tam number: indicates the number of genes in each cluster
 #'
-#' @return A list where for each gene selected by glmnet appears the 50 genes most correlated with it and that correlation
+#' @return A list where for each gene selected by glmnet appears the tam genes most correlated with it and that correlation
 #' @export
-coexpressionNetwork <- function(data, genes){
+coexpressionNetworkFixed <- function(data, genes, tam){
   all.genes = list()
   if(nrow(genes) > 0){
-    df <- calculateCorrelation(data, genes[1,1], 50)
+    df <- calculateCorrelation(data, genes[1,1], tam)
     for (i in 2:nrow(genes)) {
-      df <- rbind(df, calculateCorrelation(data, genes[i,1], 50))
+      df <- rbind(df, calculateCorrelation(data, genes[i,1], tam))
     }
     for (i in 1:nrow(genes)) {
-      gen <- df[(i+(i-1)*50):(i+(i-1)*50+50), 2]
-      corr <- df[(i+(i-1)*50):(i+(i-1)*50+50), 3]
+      gen <- df[(i+(i-1)*tam):(i+(i-1)*tam+tam), 2]
+      corr <- df[(i+(i-1)*tam):(i+(i-1)*tam+tam), 3]
       all.genes[[genes[i,1]]] = data.frame(gen,corr)
     }
   }

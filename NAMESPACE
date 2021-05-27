@@ -2,11 +2,12 @@
 
 export(bestSeed)
 export(calculateCorrelation)
-export(coexpressionNetwork)
+export(coexpressionNetworkFixed)
 export(comparisonActualPredictedCovariate)
 export(detectGenes)
 export(distributionIndividualsCovariate)
 export(glmnetGenes)
+export(histGeneFreq)
 export(jaccardIndex)
 export(normalize)
 export(rRedundantPredictors)
