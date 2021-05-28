@@ -83,6 +83,74 @@ detectGenes <- function(data, covariate, cvfit){
   return(selected.genes)
 }
 
+
+#' Study of the stability of the selection of genes with which we are going to work.
+#'
+#' @param data expression matrix
+#' @param covariate numeric vector
+#' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
+#'
+#' @return Summary of gene frequency information
+#' @export
+#'
+stabilitySelection <- function(data, covariate, selectedGenes){
+  gs = as.character()
+  seed = 0
+  counter = 1;
+  seeds = numeric(10)
+  genesSelect = numeric(10)
+  errorsTrain = numeric(10)
+  errorsTest = numeric(10)
+
+  for(i in 9:0){
+    if(seed == 987654321)
+      seed = seed +1
+    else
+      seed = seed*10+i
+    set.seed(seed)
+
+    ind.train.10 <- sample(1:ncol(data), 0.8*ncol(data))
+
+    data.train.10 <-  t(data[,ind.train.10])
+    data.test.10 <-  t(data[,-ind.train.10])
+    covariate.train.10 <-  covariate[ind.train.10]
+    covariate.test.10 <- covariate[-ind.train.10]
+
+    cvfit.10<- glmnet::cv.glmnet(data.train.10, covariate.train.10, alpha=1, family = "gaussian")
+
+    coefic.10 <- as.matrix(stats::coef(cvfit.10,s="lambda.min"))
+    non.zero.rows.10 <- rownames(coefic.10)[which(coefic.10!=0)]
+    selected.genes.10 <- data.frame(Genes = non.zero.rows.10[-1], Coeficientes = coefic.10[which(coefic.10!=0)][-1])
+
+    predict.cvfit.test.10 <- stats::predict(cvfit.10, newx = data.test.10,type = "response",s = "lambda.min")
+    predict.cvfit.train.10 <- stats::predict(cvfit.10, newx = data.train.10,type = "response",s = "lambda.min")
+
+    gs = c(gs, as.character(selected.genes.10[,1]))
+    seeds[counter] <- seed
+    genesSelect[counter] <- nrow(selected.genes.10)
+    errorsTrain[counter] <- MLmetrics::RMSE(predict.cvfit.train.10, covariate.train.10)
+    errorsTest[counter] <- MLmetrics::RMSE(predict.cvfit.test.10, covariate.test.10)
+    counter = counter + 1
+
+  }
+
+  gs = as.factor(gs)
+  gs.our.genes <- data.frame(table(gs))
+  id <- selectRows(as.character(gs.our.genes[,1]), as.character(selectedGenes[,1]))
+  gs.our.genes <- gs.our.genes[id,]
+  # as.data.frame(gs.our.genes[order(gs.our.genes[,2], decreasing = T),])
+  #
+  #
+  # df.gene.occurrences <- data.frame(num.gene.occurrences = gs.our.genes[,2])
+  return(gs.our.genes)
+
+}
+
+
+
+
+
+
 #' Co-expression network with fixed cluster sizes
 #'
 #' Calculate a coexpression network using the genes selected by the glmnet algorithm

@@ -4,17 +4,13 @@
 \alias{histGeneFreq}
 \title{Histogram of gene frequencies}
 \usage{
-histGeneFreq(data, covariate, selectedGenes)
+histGeneFreq(gs.our.genes)
 }
 \arguments{
-\item{data}{expression matrix}
-
-\item{covariate}{numeric vector}
-
-\item{selectedGenes}{dataframe with the genes selected as important by GLMNET algorithm}
+\item{gs.our.genes}{data.frame}
 }
 \value{
-Summary of gene frequency information
+plot
 }
 \description{
 Histogram of gene frequencies
