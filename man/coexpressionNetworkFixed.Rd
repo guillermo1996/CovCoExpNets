@@ -2,7 +2,7 @@
 % Please edit documentation in R/gSelection.R
 \name{coexpressionNetworkFixed}
 \alias{coexpressionNetworkFixed}
-\title{Co-expression network}
+\title{Co-expression network with fixed cluster sizes}
 \usage{
 coexpressionNetworkFixed(data, genes, tam)
 }
@@ -14,7 +14,7 @@ coexpressionNetworkFixed(data, genes, tam)
 \item{tam}{number: indicates the number of genes in each cluster}
 }
 \value{
-A list where for each gene selected by glmnet appears the tam genes most correlated with it and that correlation
+A dataframe where for each gene selected by glmnet appears the tam genes most correlated with it and that correlation
 }
 \description{
 Calculate a coexpression network using the genes selected by the glmnet algorithm

@@ -4,14 +4,14 @@
 \alias{glmnetGenes}
 \title{Run GLMNET algorithm with the best seed}
 \usage{
-glmnetGenes(data, covariate, semilla)
+glmnetGenes(data, covariate, seed)
 }
 \arguments{
 \item{data}{expression matrix}
 
 \item{covariate}{numeric vector}
 
-\item{semilla}{number}
+\item{seed}{number}
 }
 \value{
 The generated glmnet object

@@ -5,12 +5,12 @@
 #' @param m mean of the original covariate
 #' @param d standard deviation of the original covariate
 #' @param cvfit object generated with GLMNET algorithm
-#' @param semilla number
+#' @param seed number
 #'
 #' @return plot
 #' @export
-comparisonActualPredictedCovariate <- function(data, covariate, m, d, cvfit, semilla){
-  set.seed(semilla)
+comparisonActualPredictedCovariate <- function(data, covariate, m, d, cvfit, seed){
+  set.seed(seed)
 
   ind.train <- sample(1:ncol(data), 0.8*ncol(data))
 
@@ -30,9 +30,9 @@ comparisonActualPredictedCovariate <- function(data, covariate, m, d, cvfit, sem
   covariate.real.train <- covariate.train*d+m
   covariate.predicha.train <- predict.cvfit.train*d+m
 
-  datos <- data.frame(x = c(covariate.real.test, covariate.real.train), y = c(covariate.predicha.test, covariate.predicha.train), type = as.factor(c(rep("Test", ncol(data)-length(ind.train)), rep("Train", length(ind.train)))))
+  dats <- data.frame(x = c(covariate.real.test, covariate.real.train), y = c(covariate.predicha.test, covariate.predicha.train), type = as.factor(c(rep("Test", ncol(data)-length(ind.train)), rep("Train", length(ind.train)))))
 
-  ggplot2::ggplot(datos, ggplot2::aes(x=datos[,1],y=datos[,2], color=type)) +
+  ggplot2::ggplot(dats, ggplot2::aes(x=dats[,1],y=dats[,2], color=type)) +
     ggplot2::geom_point() +
     ggplot2::geom_smooth(method='lm',se = FALSE) +
     ggplot2::xlab("Real covariate")+
@@ -57,9 +57,9 @@ distributionIndividualsCovariate <- function(data, covariate, selectedGenes, m, 
   dfGraf<- data.frame(e)
   dfGraf$col <- grDevices::colorRampPalette(c("blue", "red"))(length(e))
 
-  ind <- seleccionarFilas(rownames(data),selectedGenes[,1])
-  datos.genes <-data[ind,]
-  pca.result <- stats::prcomp(t(datos.genes))
+  ind <- selectRows(rownames(data),selectedGenes[,1])
+  data.genes <-data[ind,]
+  pca.result <- stats::prcomp(t(data.genes))
 
   pcas <- as.data.frame(pca.result$x,stringsAsFactors=F)
   pcas <- cbind(covariate.genes = as.numeric(covariate*d+m), pcas)
@@ -79,19 +79,19 @@ distributionIndividualsCovariate <- function(data, covariate, selectedGenes, m, 
 #' @export
 histGeneFreq <- function(data, covariate, selectedGenes){
   gs = as.character()
-  semilla = 0
-  contador = 1;
-  semillas = numeric(10)
+  seed = 0
+  counter = 1;
+  seeds = numeric(10)
   genesSelect = numeric(10)
-  erroresTrain = numeric(10)
-  erroresTest = numeric(10)
+  errorsTrain = numeric(10)
+  errorsTest = numeric(10)
 
   for(i in 9:0){
-    if(semilla == 987654321)
-      semilla = semilla +1
+    if(seed == 987654321)
+      seed = seed +1
     else
-      semilla = semilla*10+i
-    set.seed(semilla)
+      seed = seed*10+i
+    set.seed(seed)
 
     ind.train.10 <- sample(1:ncol(data), 0.8*ncol(data))
 
@@ -103,37 +103,35 @@ histGeneFreq <- function(data, covariate, selectedGenes){
     cvfit.10<- glmnet::cv.glmnet(data.train.10, covariate.train.10, alpha=1, family = "gaussian")
 
     coefic.10 <- as.matrix(stats::coef(cvfit.10,s="lambda.min"))
-    filas.dist.cero.10 <- rownames(coefic.10)[which(coefic.10!=0)]
-    genes.seleccionados.10 <- data.frame(Genes = filas.dist.cero.10[-1], Coeficientes = coefic.10[which(coefic.10!=0)][-1])
+    non.zero.rows.10 <- rownames(coefic.10)[which(coefic.10!=0)]
+    selected.genes.10 <- data.frame(Genes = non.zero.rows.10[-1], Coeficientes = coefic.10[which(coefic.10!=0)][-1])
 
     predict.cvfit.test.10 <- stats::predict(cvfit.10, newx = data.test.10,type = "response",s = "lambda.min")
     predict.cvfit.train.10 <- stats::predict(cvfit.10, newx = data.train.10,type = "response",s = "lambda.min")
 
-    gs = c(gs, as.character(genes.seleccionados.10[,1]))
-    semillas[contador] <- semilla
-    genesSelect[contador] <- nrow(genes.seleccionados.10)
-    erroresTrain[contador] <- MLmetrics::RMSE(predict.cvfit.train.10, covariate.train.10)
-    erroresTest[contador] <- MLmetrics::RMSE(predict.cvfit.test.10, covariate.test.10)
-    contador = contador + 1
+    gs = c(gs, as.character(selected.genes.10[,1]))
+    seeds[counter] <- seed
+    genesSelect[counter] <- nrow(selected.genes.10)
+    errorsTrain[counter] <- MLmetrics::RMSE(predict.cvfit.train.10, covariate.train.10)
+    errorsTest[counter] <- MLmetrics::RMSE(predict.cvfit.test.10, covariate.test.10)
+    counter = counter + 1
 
   }
 
   gs = as.factor(gs)
-  gs.nuestros.genes <- data.frame(table(gs))
-  id <- seleccionarFilas(as.character(gs.nuestros.genes[,1]), as.character(selectedGenes[,1]))
-  gs.nuestros.genes <- gs.nuestros.genes[id,]
-  as.data.frame(gs.nuestros.genes[order(gs.nuestros.genes[,2], decreasing = T),])
+  gs.our.genes <- data.frame(table(gs))
+  id <- selectRows(as.character(gs.our.genes[,1]), as.character(selectedGenes[,1]))
+  gs.our.genes <- gs.our.genes[id,]
+  as.data.frame(gs.our.genes[order(gs.our.genes[,2], decreasing = T),])
 
 
-  t <- data.frame(num.apariciones.genes = gs.nuestros.genes[,2])
+  t <- data.frame(num.gene.occurrences = gs.our.genes[,2])
 
-  ggplot2::ggplot(data=t, ggplot2::aes(num.apariciones.genes)) +
+  ggplot2::ggplot(data=t, ggplot2::aes(num.gene.occurrences)) +
           ggplot2::geom_histogram(col="light blue",fill="light blue",alpha=0.75, breaks=seq(0, 10, by=1)) +
-          ggplot2::labs(title="Histograma frecuencia genes", x = "Num de veces que se repiten los genes", y="Num de genes")
+          ggplot2::labs(title="Histogram gene frequency", x = "Num of times that the genes are repeated", y="Num of genes")
 
-
-
-  return(summary(gs.nuestros.genes[,2]))
+  return(summary(gs.our.genes[,2]))
 
 }
 

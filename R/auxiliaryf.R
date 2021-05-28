@@ -14,7 +14,7 @@ calculateCorrelation <- function(x,y, tam){
 
   corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
   ind <- order(abs(corr), decreasing = T)[1:(tam+1)]
-  df <- data.frame(gen.principal = y, genes = utils::head(rownames(corr)[ind], (tam+1)), cor = corr[ind])
+  df <- data.frame(main.gen = y, genes = utils::head(rownames(corr)[ind], (tam+1)), cor = corr[ind])
 
   return(df)
 }
@@ -53,12 +53,103 @@ jaccardIndex <- function(df, tam){
 #'
 #' @return numeric vector
 #' @export
-seleccionarFilas <- function(x,y){
-  indices = data.frame()
-  indices = which(x==y[1])
+selectRows <- function(x,y){
+  indexes = data.frame()
+  indexes = which(x==y[1])
 
   for(n in 2:length(y)){
-    indices[n] = which(x==y[n])
+    indexes[n] = which(x==y[n])
   }
-  return(indices)
+  return(indexes)
 }
+
+
+
+#' Calculates clusters by varying the size
+#'
+#' @param x coexpression matrix
+#' @param y factor
+#' @param cjt name of the genes selected as important by GLMNET algorithm
+#' @param covariate numeric vector
+#' @param seed number
+#'
+#' @return dataframe with clusters
+#' @export
+#'
+calculateClusters <- function(x,y, cjt, covariate, seed){
+  set.seed(seed)
+  ind.train <- sample(1:ncol(x), 0.8*ncol(x))
+
+  data.train <-  t(x[,ind.train])
+  covariate.train <-  covariate[ind.train]
+
+
+  corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
+  ind <- order(abs(corr), decreasing = T)
+  df <- data.frame(gen.principal = y, genes = rownames(corr)[ind], cor = corr[ind])
+  new.col <- is.element(df[1,2], cjt)
+  for (i in 2:nrow(df)) {
+    new.col <- c(new.col, is.element(df[i,2], cjt))
+  }
+
+  df <- cbind(df, gen.glmnet=new.col)
+
+  tam <- 2
+  indx <- selectRows(rownames(x), df[1:tam,2])
+  mydata <- data.frame(covariate.train = covariate.train, data.train[,indx])
+  mymodel = stats::lm(covariate.train~ .,data=mydata)
+  adjusted_r2 <- as.numeric(summary(mymodel)[9])
+  r2 <- adjusted_r2
+  diff <- 1
+
+  while (diff > 10^(-3)){
+    tam <- tam+1
+    indx <- selectRows(rownames(data), df[1:tam,2])
+    mydata <- data.frame(covariate.train = covariate.train, data.train[,indx])
+    mymodel = stats::lm(covariate.train~ .,data=mydata)
+    ad_r2 <- as.numeric(summary(mymodel)[9])
+
+    diff <- ad_r2 -adjusted_r2
+
+    adjusted_r2 <- ad_r2
+    r2 <- c(r2, adjusted_r2)
+  }
+
+  r2=c(0,r2)
+  if(diff > 0)
+    return(cbind(df[1:tam,], Adjusted.R2 = r2))
+  else
+    return(cbind(df[1:(tam-1),], Adjusted.R2 = utils::head(r2,n=(tam-1))))
+}
+
+#' Running the function gprofiler
+#'
+#' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
+#' @param tam numeric vector containing the number of genes forming each cluster
+#' @param data coexpression matrix
+#' @param df dataframe with clusters
+#'
+#' @return The information obtained by running gprofiler
+#' @export
+#'
+running.gprofiler <- function(selectedGenes, tam, data, df){
+  all.genes = list()
+  all.genes[[selectedGenes[1,1]]] = df[1:tam[1], 2]
+  for (i in 2:nrow(selectedGenes)) {
+    all.genes[[selectedGenes[i,1]]] = df[(1+sum(tam[1:(i-1)])):(sum(tam[1:i])), 2]
+  }
+
+  background <- rownames(data)
+
+  output.gprofiler2 <- gprofiler2::gost(all.genes,
+                                        correction_method="fdr",
+                                        custom_bg = background,
+                                        sources = c("GO","KEGG","REAC"),
+                                        domain_scope = "custom",
+                                        organism = "hsapiens",
+                                        exclude_iea = F)
+  return(output.gprofiler2)
+}
+
+
+

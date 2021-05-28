@@ -4,7 +4,7 @@
 \alias{comparisonActualPredictedCovariate}
 \title{Comparison between real values of the covariate and predicted values}
 \usage{
-comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, semilla)
+comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, seed)
 }
 \arguments{
 \item{data}{expression matrix}
@@ -17,7 +17,7 @@ comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, semilla)
 
 \item{cvfit}{object generated with GLMNET algorithm}
 
-\item{semilla}{number}
+\item{seed}{number}
 }
 \value{
 plot

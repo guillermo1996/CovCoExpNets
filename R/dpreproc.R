@@ -61,10 +61,10 @@ rRedundantPredictors <- function(data){
   ind <-caret::nearZeroVar(r.data,freqCut = 20, uniqueCut = 5)
   if(length(ind) > 0)
     data <- data[-ind,]
-  correlacion <- stats::cor(t(data))
-  eliminar <- caret::findCorrelation(correlacion, cutoff=0.9)
-  if(length(eliminar > 0))
-    data <- data[-eliminar,]
+  correlation <- stats::cor(t(data))
+  remove <- caret::findCorrelation(correlation, cutoff=0.9)
+  if(length(remove > 0))
+    data <- data[-remove,]
   return(data)
 }
 
