@@ -4,14 +4,12 @@
 \alias{calculateClusters}
 \title{Calculates clusters by varying the size}
 \usage{
-calculateClusters(x, y, cjt, covariate, seed)
+calculateClusters(x, y, covariate, seed)
 }
 \arguments{
 \item{x}{coexpression matrix}
 
 \item{y}{factor}
-
-\item{cjt}{name of the genes selected as important by GLMNET algorithm}
 
 \item{covariate}{numeric vector}
 

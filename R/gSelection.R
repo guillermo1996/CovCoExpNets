@@ -182,10 +182,10 @@ coexpressionNetworkFixed <- function(data, genes, tam){
 #'
 coexpressionNetworkVariable <- function(data, selectedGenes, covariate, seed){
 
-  df <- calculateClusters(data, selectedGenes[1,1], selectedGenes[,1], covariate, seed)
+  df <- calculateClusters(data, selectedGenes[1,1], covariate, seed)
   tam <- nrow(df)
   for (i in 2:nrow(selectedGenes)) {
-    df_g <- calculateClusters(data, selectedGenes[i,1], selectedGenes[,1], covariate, seed)
+    df_g <- calculateClusters(data, selectedGenes[i,1], covariate, seed)
     tam <- c(tam, nrow(df_g))
     df <- rbind(df, df_g)
   }

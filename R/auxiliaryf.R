@@ -69,14 +69,13 @@ selectRows <- function(x,y){
 #'
 #' @param x coexpression matrix
 #' @param y factor
-#' @param cjt name of the genes selected as important by GLMNET algorithm
 #' @param covariate numeric vector
 #' @param seed number
 #'
 #' @return dataframe with clusters
 #' @export
 #'
-calculateClusters <- function(x,y, cjt, covariate, seed){
+calculateClusters <- function(x,y, covariate, seed){
   set.seed(seed)
   ind.train <- sample(1:ncol(x), 0.8*ncol(x))
 
@@ -87,12 +86,6 @@ calculateClusters <- function(x,y, cjt, covariate, seed){
   corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
   ind <- order(abs(corr), decreasing = T)
   df <- data.frame(gen.principal = y, genes = rownames(corr)[ind], cor = corr[ind])
-  new.col <- is.element(df[1,2], cjt)
-  for (i in 2:nrow(df)) {
-    new.col <- c(new.col, is.element(df[i,2], cjt))
-  }
-
-  df <- cbind(df, gen.glmnet=new.col)
 
   tam <- 2
   indx <- selectRows(rownames(x), df[1:tam,2])
