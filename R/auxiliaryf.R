@@ -73,7 +73,6 @@ selectRows <- function(x,y){
 #'
 #' @return dataframe with clusters
 #' @export
-#'
 calculateClusters <- function(x,y, covariate){
 
   corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
@@ -90,7 +89,7 @@ calculateClusters <- function(x,y, covariate){
 
   while (diff > 10^(-5)){
     tam <- tam+1
-    indx <- selectRows(rownames(data), df[1:tam,2])
+    indx <- selectRows(rownames(x), df[1:tam,2])
     mydata <- data.frame(covariate = covariate, t(x[indx,]))
     mymodel = stats::lm(covariate~ .,data=mydata)
     ad_r2 <- as.numeric(summary(mymodel)[9])
