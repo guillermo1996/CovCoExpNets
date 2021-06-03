@@ -175,20 +175,21 @@ coexpressionNetworkFixed <- function(data, genes, tam){
 #' @param data expression matrix
 #' @param selectedGenes dataframe with the genes selected by the glmnet algorithm and their coefficients
 #' @param covariate numeric vector
-#' @param seed number
 #'
 #' @return A dataframe where for each gene selected by glmnet appears the tam genes most correlated with it and a vector with cluster sizes
 #' @export
 #'
-coexpressionNetworkVariable <- function(data, selectedGenes, covariate, seed){
+coexpressionNetworkVariable <- function(data, selectedGenes, covariate){
 
-  df <- calculateClusters(data, selectedGenes[1,1], covariate, seed)
+  df <- calculateClusters(data, selectedGenes[1,1], covariate)
   tam <- nrow(df)
   for (i in 2:nrow(selectedGenes)) {
-    df_g <- calculateClusters(data, selectedGenes[i,1], covariate, seed)
+    df_g <- calculateClusters(data, selectedGenes[i,1], covariate)
     tam <- c(tam, nrow(df_g))
     df <- rbind(df, df_g)
   }
   return(list(df, tam))
 
 }
+
+

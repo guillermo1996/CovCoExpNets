@@ -140,7 +140,7 @@ biological information about the networks.
 
 ``` r
 network.fixed <- coexpressionNetworkFixed(data, selected.genes, 50)
-network.variable <- coexpressionNetworkVariable(data, selected.genes, age, seed)
+network.variable <- coexpressionNetworkVariable(data, selected.genes, age)
 
 output.gprofiler2.fixed <- running.gprofiler(selected.genes, rep(51, nrow(selected.genes)), data, network.fixed)
 

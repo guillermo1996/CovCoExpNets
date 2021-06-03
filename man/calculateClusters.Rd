@@ -4,7 +4,7 @@
 \alias{calculateClusters}
 \title{Calculates clusters by varying the size}
 \usage{
-calculateClusters(x, y, covariate, seed)
+calculateClusters(x, y, covariate)
 }
 \arguments{
 \item{x}{coexpression matrix}
@@ -12,8 +12,6 @@ calculateClusters(x, y, covariate, seed)
 \item{y}{factor}
 
 \item{covariate}{numeric vector}
-
-\item{seed}{number}
 }
 \value{
 dataframe with clusters

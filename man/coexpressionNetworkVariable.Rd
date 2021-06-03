@@ -4,7 +4,7 @@
 \alias{coexpressionNetworkVariable}
 \title{Co-expression network with variable cluster sizes}
 \usage{
-coexpressionNetworkVariable(data, selectedGenes, covariate, seed)
+coexpressionNetworkVariable(data, selectedGenes, covariate)
 }
 \arguments{
 \item{data}{expression matrix}
@@ -12,8 +12,6 @@ coexpressionNetworkVariable(data, selectedGenes, covariate, seed)
 \item{selectedGenes}{dataframe with the genes selected by the glmnet algorithm and their coefficients}
 
 \item{covariate}{numeric vector}
-
-\item{seed}{number}
 }
 \value{
 A dataframe where for each gene selected by glmnet appears the tam genes most correlated with it and a vector with cluster sizes

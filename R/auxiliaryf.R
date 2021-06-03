@@ -70,18 +70,11 @@ selectRows <- function(x,y){
 #' @param x coexpression matrix
 #' @param y factor
 #' @param covariate numeric vector
-#' @param seed number
 #'
 #' @return dataframe with clusters
 #' @export
 #'
-calculateClusters <- function(x,y, covariate, seed){
-  set.seed(seed)
-  ind.train <- sample(1:ncol(x), 0.8*ncol(x))
-
-  data.train <-  t(x[,ind.train])
-  covariate.train <-  covariate[ind.train]
-
+calculateClusters <- function(x,y, covariate){
 
   corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
   ind <- order(abs(corr), decreasing = T)
@@ -89,8 +82,8 @@ calculateClusters <- function(x,y, covariate, seed){
 
   tam <- 2
   indx <- selectRows(rownames(x), df[1:tam,2])
-  mydata <- data.frame(covariate.train = covariate.train, data.train[,indx])
-  mymodel = stats::lm(covariate.train~ .,data=mydata)
+  mydata <- data.frame(covariate = covariate, t(x[indx,]))
+  mymodel = stats::lm(covariate~ .,data=mydata)
   adjusted_r2 <- as.numeric(summary(mymodel)[9])
   r2 <- adjusted_r2
   diff <- 1
@@ -98,8 +91,8 @@ calculateClusters <- function(x,y, covariate, seed){
   while (diff > 10^(-5)){
     tam <- tam+1
     indx <- selectRows(rownames(data), df[1:tam,2])
-    mydata <- data.frame(covariate.train = covariate.train, data.train[,indx])
-    mymodel = stats::lm(covariate.train~ .,data=mydata)
+    mydata <- data.frame(covariate = covariate, t(x[indx,]))
+    mymodel = stats::lm(covariate~ .,data=mydata)
     ad_r2 <- as.numeric(summary(mymodel)[9])
 
     diff <- ad_r2 -adjusted_r2
