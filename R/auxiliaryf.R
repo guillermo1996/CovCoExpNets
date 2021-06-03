@@ -95,7 +95,7 @@ calculateClusters <- function(x,y, covariate, seed){
   r2 <- adjusted_r2
   diff <- 1
 
-  while (diff > 10^(-3)){
+  while (diff > 10^(-5)){
     tam <- tam+1
     indx <- selectRows(rownames(data), df[1:tam,2])
     mydata <- data.frame(covariate.train = covariate.train, data.train[,indx])
