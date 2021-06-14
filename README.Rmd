@@ -150,3 +150,9 @@ output.gprofiler2.fixed <- running.gprofiler(selected.genes, rep(51, nrow(select
 output.gprofiler2.variable <- running.gprofiler(selected.genes, network.variable[[2]], data, network.variable[[1]])
 
 ```
+
+
+# Credits
+
+This package is based on the package *glmnet*, available at the following URL: <https://cran.r-project.org/web/packages/glmnet/glmnet.pdf>.
+And it has been supervised by Juan A. Botía (Universidad de Murcia) (<https://github.com/juanbot>), who has also contributed to its design.
