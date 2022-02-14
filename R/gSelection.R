@@ -2,13 +2,15 @@
 #'
 #' @param data expression matrix
 #' @param covariate numeric vector
+#' @param useRMSE boolean parameter
 #'
 #' @return a number representing the best seed
 #' @export
-bestSeed <- function(data,covariate){
+bestSeed <- function(data, covariate, useRMSE = FALSE){
   seed = 0
   counter = 1;
   seeds = numeric(10)
+  errorsTest = numeric(10)
   genesSelect = numeric(10)
 
   for(i in 9:0){
@@ -24,16 +26,26 @@ bestSeed <- function(data,covariate){
 
     cvfit.10<- glmnet::cv.glmnet(data.train.10, covariate.train.10, alpha=1, family = "gaussian")
 
-    coefic.10 <- as.matrix(stats::coef(cvfit.10,s="lambda.min"))
-    seeds[counter] <- seed
-    genesSelect[counter] <- length(which(coefic.10!=0))-1
+    if(useRMSE){
+      predict.cvfit.test.10 <- stats::predict(cvfit.10, newx = data.test.10, type = "response", s = "lambda.min")
+      errorsTest[counter] <- MLmetrics::RMSE(predict.cvfit.test.10, covariate.test.10)
+    }else{
+      coefic.10 <- as.matrix(stats::coef(cvfit.10,s="lambda.min"))
+      seeds[counter] <- seed
+      genesSelect[counter] <- length(which(coefic.10!=0))-1
+    }
     counter = counter + 1
 
   }
 
-  dat <- data.frame(seeds, genesSelect)
+  if(useRMSE){
+    dat <- data.frame(seeds, errorsTest)
+    seed <- dat$seeds[which.min(dat$errorsTest)]
+  }else{
+    dat <- data.frame(seeds, genesSelect)
+    seed <- dat$seeds[which.min(dat$genesSelect)]
+  }
 
-  seed <- dat$seeds[which.min(dat$genesSelect)]
   return(seed)
 }
 

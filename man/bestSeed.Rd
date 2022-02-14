@@ -4,12 +4,14 @@
 \alias{bestSeed}
 \title{Calculates the best seed for GLMNET algorithm}
 \usage{
-bestSeed(data, covariate)
+bestSeed(data, covariate, useRMSE = FALSE)
 }
 \arguments{
 \item{data}{expression matrix}
 
 \item{covariate}{numeric vector}
+
+\item{useRMSE}{boolean parameter}
 }
 \value{
 a number representing the best seed
