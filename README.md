@@ -35,7 +35,7 @@ studied, so we are creating a supervised coexpression network.
 You can install SuCoNets like so:
 
 ``` r
-devtools::install_github("carmen-maria-hernandez/SuCoNets”)
+devtools::install_github("guillermo1996/SuCoNets")
 ```
 
 ## Example
