@@ -1,12 +1,17 @@
 Package: SuCoNets
 Title: Development of supervidsed co-expression networks
-Version: 0.0.0.9000
-Authors@R: 
+Version: 0.0.1.9000
+Authors@R: c(
     person(given = "Carmen María",
            family = "Hernández Puerta",
            role = c("aut", "cre"),
            email = "carmenmaria.hernandezp@um.es",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "YOUR-ORCID-ID")),
+    person(given = "Guillermo",
+           family = "Rocamora Pérez",
+           role = c("aut"),
+           email = "guillermo.rocamorap@um.es",
+           comment = c(ORCID = "YOUR-ORCID-ID")))
 Description: Nowadays, the way to create a co-expression network is to use Hierarchical Clustering. 
       This package allows you to create a co-expression network using the glmnet algorithm. 
       In addition, the network created will be relative to a covariate of the sample to be studied,
@@ -15,8 +20,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
-URL: https//github.com/carmen-maria-hernandez/SuCoNets
-BugReports: https//github.com/carmen-maria-hernandez/SuCoNets/issues
+URL: https://github.com/guillermo1996/SuCoNets
+BugReports: https://github.com/guillermo1996/SuCoNets/issues
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
