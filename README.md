@@ -1,6 +1,23 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+# Disclaimer
+
+This package is currently in development. For a more stable version, please visit [Carmen María Hernandez's version](https://github.com/carmen-maria-hernandez/SuCoNets).
+
+## Modifications
+
+The main modification to this package is the added option to create a model not by the best data partition (as done previously with the `bestSeed` function), but by selecting the genes that appear the most after running the `glmnet` algorithm several times (ten by default). This produces a set of genes in which the user can choose the minimum number of appearances for a gene to be chosen.
+
+Let's see an example of this behavior. We first need an expression matrix previously treated with the `SuCoNets` pipeline and a covariate in the form of a numerical vector, also normalized following the instructions below. We start by running `geneSelection`, which produces a dataframe of the genes selected by `glmnet` and their frequency of appearance.  We then create the model by running `glmnetGenesSubset`.
+
+```
+genes.subset <- geneSelection(data, age)
+cvfit <- glmnetGenesSubset(data, age, genes.subset, m = 5)
+```
+
+From this point forwards, we can continue to run the `SuCoNets` pipeline.
+
 # SuCoNets
 
 <!-- badges: start -->

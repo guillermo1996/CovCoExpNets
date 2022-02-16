@@ -32,4 +32,7 @@ Imports:
     ggplot2,
     grDevices,
     graphics,
-    gprofiler2
+    gprofiler2,
+    dplyr,
+    foreach,
+    doParallel

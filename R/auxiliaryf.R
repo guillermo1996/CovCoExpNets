@@ -107,6 +107,7 @@ calculateClusters <- function(x,y, covariate){
     return(cbind(df[1:(tam-1),], Adjusted.R2 = utils::head(r2,n=(tam-1))))
 }
 
+
 #' Running the function gprofiler
 #'
 #' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
@@ -136,5 +137,55 @@ running.gprofiler <- function(selectedGenes, tam, data, df){
   return(output.gprofiler2)
 }
 
+
+#' Getting the r^2 value for a prediction
+#'
+#' @param real.values numeric vector of real values of the covariate
+#' @param pred.values numeric vector of predicted values of the covariate
+#'
+#' @return The calculated r^2
+#' @export
+get.r2 <- function(real.values, pred.values){
+  RSS = sum((pred.values - real.values)^2)
+  TSS = sum((pred.values - mean(real.values))^2)
+  return(1 - RSS/TSS)
+}
+
+
+#' Getting the adjusted r^2 value for a prediction
+#'
+#' @param real.values numeric vector of real values of the covariate
+#' @param pred.values numeric vector of predicted values of the covariate
+#' @param n number of samples
+#' @param k number of predictors (length of selected genes)
+#'
+#' @return The calculated adjuted r^2
+#' @export
+get.r2_adj <- function(real.values, pred.values, k){
+  RSS = sum((pred.values - real.values)^2)
+  TSS = sum((pred.values - mean(real.values))^2)
+
+  #coefic <- as.matrix(stats::coef(cvfit, s="lambda.min"))
+  #k = length(which(coefic!=0)) - 1
+  n = length(pred.values)
+
+  r2_adj = 1 - (RSS/(n-k-1))/(TSS/(n-1))
+  return(r2_adj)
+}
+
+
+#' Getting the RMSE for a model and a dataset
+#'
+#' @param real.values numeric vector of real values of the covariate
+#' @param pred.values numeric vector of predicted values of the covariate
+#'
+#' @return The calculated adjuted RMSE
+#' @export
+get.RMSE <- function(real.values, pred.values){
+  RSS = sum((pred.values - real.values)^2)
+  n = length(pred.values)
+  RMSE = sqrt(RSS/n)
+  return(RMSE)
+}
 
 

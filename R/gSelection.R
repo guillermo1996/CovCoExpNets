@@ -50,6 +50,59 @@ bestSeed <- function(data, covariate, useRMSE = FALSE){
 }
 
 
+#' Estimates the most common subset of genes to predict a covariate
+#'
+#' @param data expression matrix
+#' @param covariate numeric vector
+#' @param n integer. How many times does the gen need to appear to be selected
+#'
+#' @return Dataframe containing the genes selected and their frequency
+#' @export
+geneSelection <- function(data, covariate, n = 5){
+  set.seed(0)
+  seeds = sample(999999999, 10)
+  #set.seed(seeds[11])
+
+  genes.subset = foreach(i = 1:10, .combine = "rbind") %dopar% {
+    set.seed(seeds[i])
+
+    ind.train.10 = sample(1:ncol(data), 0.8*ncol(data))
+    data.train.10 =  t(data[,ind.train.10])
+    covariate.train.10 = covariate[ind.train.10]
+    cvfit.10 = glmnet::cv.glmnet(data.train.10, covariate.train.10, alpha=1, family = "gaussian")
+
+    detectGenes(data, covariate, cvfit.10)
+  }
+
+  genes.subset = table(genes.subset$Genes, dnn = "Genes") %>%
+    as.data.frame() %>%
+    arrange(desc(Freq))
+
+  genes.subset = genes.subset %>% filter(Freq >= n) %>% pull(Genes)
+  as.character(genes.subset)
+}
+
+
+#' Run GLMNET algorithm with the selected genes
+#'
+#' @param data expression matrix
+#' @param covariate numeric vector
+#' @param predictor.genes dataframe containing the gene selection and their frequency
+#'
+#' @return The generated glmnet object
+#' @export
+glmnetGenesSubset <- function(data, covariate, genes.subset){
+  set.seed(1)
+  ind.train <- sample(1:ncol(data), 0.8*ncol(data))
+
+  data.train <-  t(data[genes.subset, ind.train])
+  covariate.train <-  covariate[ind.train]
+
+  cvfit<- glmnet::cv.glmnet(data.train, covariate.train, alpha=1, family = "gaussian")
+  return(cvfit)
+}
+
+
 #' Run GLMNET algorithm with the best seed
 #'
 #' @param data expression matrix
@@ -88,7 +141,7 @@ glmnetGenes <- function(data,covariate, seed){
 #'
 detectGenes <- function(data, covariate, cvfit){
 
-  coefic <- as.matrix(stats::coef(cvfit,s="lambda.min"))
+  coefic <- as.matrix(stats::coef(cvfit, s="lambda.min"))
   non.zero.rows <- rownames(coefic)[which(coefic!=0)]
   selected.genes <- data.frame(Genes = non.zero.rows[-1], Coeficientes = coefic[which(coefic!=0)][-1])
 

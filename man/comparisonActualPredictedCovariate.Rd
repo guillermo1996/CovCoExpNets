@@ -4,7 +4,15 @@
 \alias{comparisonActualPredictedCovariate}
 \title{Comparison between real values of the covariate and predicted values}
 \usage{
-comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, seed)
+comparisonActualPredictedCovariate(
+  data,
+  covariate,
+  m,
+  d,
+  cvfit,
+  seed,
+  genes.subset
+)
 }
 \arguments{
 \item{data}{expression matrix}
