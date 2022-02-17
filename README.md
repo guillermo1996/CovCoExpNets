@@ -11,9 +11,9 @@ The main modification to this package is the added option to create a model not 
 
 Let's see an example of this behavior. We first need an expression matrix previously treated with the `SuCoNets` pipeline and a covariate in the form of a numerical vector, also normalized following the instructions below. We start by running `geneSelection`, which produces a dataframe of the genes selected by `glmnet` and their frequency of appearance.  We then create the model by running `glmnetGenesSubset`.
 
-```
-genes.subset <- geneSelection(data, age)
-cvfit <- glmnetGenesSubset(data, age, genes.subset, m = 5)
+``` r
+genes.subset <- geneSelection(data, age, n = 5)
+cvfit <- glmnetGenesSubset(data, age, genes.subset)
 ```
 
 From this point forwards, we can continue to run the `SuCoNets` pipeline.
