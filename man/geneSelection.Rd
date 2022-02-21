@@ -4,14 +4,14 @@
 \alias{geneSelection}
 \title{Estimates the most common subset of genes to predict a covariate}
 \usage{
-geneSelection(data, covariate, n = 5)
+geneSelection(data, covariate, n = 0.5)
 }
 \arguments{
 \item{data}{expression matrix}
 
 \item{covariate}{numeric vector}
 
-\item{n}{integer. How many times does the gen need to appear to be selected}
+\item{n}{numeric value. Minimum ratio of appearances to be selected}
 }
 \value{
 Dataframe containing the genes selected and their frequency

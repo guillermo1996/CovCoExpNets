@@ -54,11 +54,11 @@ bestSeed <- function(data, covariate, useRMSE = FALSE){
 #'
 #' @param data expression matrix
 #' @param covariate numeric vector
-#' @param n integer. How many times does the gen need to appear to be selected
+#' @param n numeric value. Minimum ratio of appearances to be selected
 #'
 #' @return Dataframe containing the genes selected and their frequency
 #' @export
-geneSelection <- function(data, covariate, n = 5){
+geneSelection <- function(data, covariate, n = 0.5){
   set.seed(0)
   seeds = sample(999999999, 10)
   #set.seed(seeds[11])
@@ -76,10 +76,45 @@ geneSelection <- function(data, covariate, n = 5){
 
   genes.subset = table(genes.subset$Genes, dnn = "Genes") %>%
     as.data.frame() %>%
+    mutate(Freq = Freq / B) %>%
     arrange(desc(Freq))
 
   genes.subset = genes.subset %>% filter(Freq >= n) %>% pull(Genes)
   as.character(genes.subset)
+}
+
+
+#' Estimates the most common subset of genes to predict a covariate using Bootstrap
+#'
+#' @param data expression matrix
+#' @param covariate numeric vector
+#' @param B number of bootstrap resamples (default 20)
+#' @param n numeric value. Minimum ratio of appearances to be selected
+#'
+#' @return List containing the genes selected and their frequency
+#' @export
+geneSelectionBootstrap <- function(data, covariate, B = 20, n = 0.5){
+  set.seed(0)
+  seeds = sample(999999999, B)
+  #set.seed(seeds[11])
+  genes.subset = foreach(j = 1:B, .combine = "rbind") %dopar%{
+    set.seed(seeds[j])
+    ind.train = sample(1:ncol(data), ncol(data), replace = TRUE)
+
+    data.train.B = t(data[, ind.train])
+    covariate.train.B = age[ind.train]
+
+    cvfit.B = glmnet::cv.glmnet(data.train.B, covariate.train.B, alpha=1, family = "gaussian")
+
+    detectGenes(data, covariate, cvfit.B)
+  }
+
+  genes.subset = table(genes.subset$Genes, dnn = "Genes") %>%
+    as.data.frame() %>%
+    mutate(Freq = Freq / B) %>%
+    arrange(desc(Freq))
+  genes.subset = genes.subset %>% filter(Freq >= n) %>% pull(Genes)
+  genes.subset = as.character(genes.subset)
 }
 
 
@@ -256,5 +291,3 @@ coexpressionNetworkVariable <- function(data, selectedGenes, covariate){
   return(list(df, tam))
 
 }
-
-
