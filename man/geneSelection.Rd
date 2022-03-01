@@ -2,20 +2,43 @@
 % Please edit documentation in R/gSelection.R
 \name{geneSelection}
 \alias{geneSelection}
-\title{Estimates the most common subset of genes to predict a covariate}
+\title{Reduce the predictors to a subset}
 \usage{
-geneSelection(data, covariate, n = 0.5)
+geneSelection(
+  data,
+  covariate,
+  t = 10,
+  k = 10,
+  n = 0.5,
+  train.split = 0.8,
+  sample.prob = c()
+)
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of numeric expression matrices}
 
-\item{covariate}{numeric vector}
+\item{covariate}{list of numeric vectors}
 
-\item{n}{numeric value. Minimum ratio of appearances to be selected}
+\item{t}{number of times to repeat the train/test split. Defaults to 10}
+
+\item{k}{number of kfolds to execute in the GLMNET algorithm
+(\link[glmnet]{cv.glmnet}). Defaults to 10}
+
+\item{n}{numeric value. Minimum ratio of gene appearance to be selected as a
+predictor}
+
+\item{train.split}{numeric percentage of samples to take as train}
+
+\item{sample.prob}{list of numeric vectors as weights when applying
+\link[base]{sample}}
 }
 \value{
-Dataframe containing the genes selected and their frequency
+list of vectors containing the genes selected for each condition. If
+only one data matrix is provided, it will return the reduced matrix, not a
+list.
 }
 \description{
-Estimates the most common subset of genes to predict a covariate
+Estimates the most common subset of genes that the GLMNET algorithm considers
+important to predict a covariate. The inputs can be either a list object
+generated from previous SuCoNets functions or individual condition variables.
 }

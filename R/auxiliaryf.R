@@ -1,8 +1,8 @@
 #' Calculate correlation
 #'
-#' Given a coexpression matrix x and a gene (which is represented as a numerical vector) y from that matrix,
-#' this function returns a subset of x with the genes most correlated with y.
-#' The size of this subset is tam
+#' Given a coexpression matrix x and a gene (which is represented as a numerical
+#' vector) y from that matrix, this function returns a subset of x with the
+#' genes most correlated with y. The size of this subset is tam
 #'
 #' @param x coexpression matrix
 #' @param y factor
@@ -10,9 +10,9 @@
 #'
 #' @return data.frame
 #' @export
-calculateCorrelation <- function(x,y, tam){
+calculateCorrelation <- function(x, y, tam){
 
-  corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
+  corr <- stats::cor(x=t(x), y = (x[which(rownames(x)==y),]))
   ind <- order(abs(corr), decreasing = T)[1:(tam+1)]
   df <- data.frame(main.gen = y, genes = utils::head(rownames(corr)[ind], (tam+1)), cor = corr[ind])
 
@@ -21,10 +21,11 @@ calculateCorrelation <- function(x,y, tam){
 
 #' Calculate the Jaccard index
 #'
-#' Given a dataframe df formed by sets of genes, this function calculates the Jaccard index
-#' of each set with the rest and returns a summary with the information of all the calculated indexes.
-#' Among the information returned by this function is the median of all the indexes.
-#' The closer the median is to zero, the more independent the sets will be.
+#' Given a dataframe df formed by sets of genes, this function calculates the
+#' Jaccard index of each set with the rest and returns a summary with the
+#' information of all the calculated indexes. Among the information returned by
+#' this function is the median of all the indexes. The closer the median is to
+#' zero, the more independent the sets will be.
 #'
 #' @param df dataframe
 #' @param tam size of the sets
@@ -73,9 +74,9 @@ selectRows <- function(x,y){
 #'
 #' @return dataframe with clusters
 #' @export
-calculateClusters <- function(x,y, covariate){
+calculateClusters <- function(x, y, covariate){
 
-  corr <- stats::cor(x=t(x), y = t(x[which(rownames(x)==y),]))
+  corr <- stats::cor(x=t(x), y = (x[which(rownames(x)==y),]))
   ind <- order(abs(corr), decreasing = T)
   df <- data.frame(gen.principal = y, genes = rownames(corr)[ind], cor = corr[ind])
 
@@ -110,31 +111,63 @@ calculateClusters <- function(x,y, covariate){
 
 #' Running the function gprofiler
 #'
-#' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
-#' @param tam numeric vector containing the number of genes forming each cluster
-#' @param data coexpression matrix
-#' @param df dataframe with clusters
+#' @param selectedGenes dataframe or list of dataframes, with the genes selected
+#'   as important by GLMNET algorithm.
+#' @param data coexpression matrix. Also accepts a list of coexpression matrices
+#'   for different conditions.
+#' @param df dataframe with clusters. Also accepts a list of dataframes for
+#'   different conditions.
+#' @param tam number: indicates the number of genes in each cluster. Only
+#'   required for fixed networks. Must be the same as the one provided to
+#'   coexpressionNetworkFixed.
 #'
 #' @return The information obtained by running gprofiler
 #' @export
 #'
-running.gprofiler <- function(selectedGenes, tam, data, df){
-  all.genes = list()
-  all.genes[[selectedGenes[1,1]]] = df[1:tam[1], 2]
-  for (i in 2:nrow(selectedGenes)) {
-    all.genes[[selectedGenes[i,1]]] = df[(1+sum(tam[1:(i-1)])):(sum(tam[1:i])), 2]
+running.gprofiler <- function(selectedGenes, data, df, tam){
+  if(!is(data, "list")){
+    data = list(data)
+    selectedGenes = list(selectedGenes)
+    df = list(df)
   }
 
-  background <- rownames(data)
+  r = foreach(i = 1:length(data), .combine = "c") %dopar% {
+    data.i = data[[i]]
+    selectedGenes.i = selectedGenes[[i]]
+    df.i = df[[i]]
 
-  output.gprofiler2 <- gprofiler2::gost(all.genes,
-                                        correction_method="fdr",
-                                        custom_bg = background,
-                                        sources = c("GO","KEGG","REAC"),
-                                        domain_scope = "custom",
-                                        organism = "hsapiens",
-                                        exclude_iea = F)
-  return(output.gprofiler2)
+    if(is(df.i, "list")){
+      tam.i = df.i[[2]]
+      df.i = df.i[[1]]
+    }else{
+      tam.i = rep(tam + 1, nrow(selectedGenes.i))
+    }
+
+    all.genes = list()
+    all.genes[[selectedGenes.i[1, 1]]] = df.i[1:tam.i[1], 2]
+    for (j in 2:nrow(selectedGenes.i)) {
+      all.genes[[selectedGenes.i[j, 1]]] = df.i[(1+sum(tam.i[1:(j-1)])):(sum(tam.i[1:j])), 2]
+    }
+
+    background <- rownames(data.i)
+
+    output.gprofiler2 <- gprofiler2::gost(all.genes,
+                                          correction_method="fdr",
+                                          custom_bg = background,
+                                          sources = c("GO","KEGG","REAC"),
+                                          domain_scope = "custom",
+                                          organism = "hsapiens",
+                                          exclude_iea = F)
+    output.gprofiler2 = list(output.gprofiler2)
+    names(output.gprofiler2) = names(data)[i]
+    output.gprofiler2
+  }
+
+  if(length(r) == 1){
+    return(r[[1]])
+  }else{
+    return(r)
+  }
 }
 
 
@@ -156,12 +189,11 @@ get.r2 <- function(real.values, pred.values){
 #'
 #' @param real.values numeric vector of real values of the covariate
 #' @param pred.values numeric vector of predicted values of the covariate
-#' @param n number of samples
 #' @param k number of predictors (length of selected genes)
 #'
 #' @return The calculated adjuted r^2
 #' @export
-get.r2_adj <- function(real.values, pred.values, k){
+get.r2_adj <- function(pred.values, real.values, k){
   RSS = sum((pred.values - real.values)^2)
   TSS = sum((pred.values - mean(real.values))^2)
 
@@ -171,21 +203,6 @@ get.r2_adj <- function(real.values, pred.values, k){
 
   r2_adj = 1 - (RSS/(n-k-1))/(TSS/(n-1))
   return(r2_adj)
-}
-
-
-#' Getting the RMSE for a model and a dataset
-#'
-#' @param real.values numeric vector of real values of the covariate
-#' @param pred.values numeric vector of predicted values of the covariate
-#'
-#' @return The calculated adjuted RMSE
-#' @export
-get.RMSE <- function(real.values, pred.values){
-  RSS = sum((pred.values - real.values)^2)
-  n = length(pred.values)
-  RMSE = sqrt(RSS/n)
-  return(RMSE)
 }
 
 

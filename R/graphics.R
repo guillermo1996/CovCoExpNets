@@ -1,75 +1,136 @@
 #' Comparison between real values of the covariate and predicted values
 #'
-#' @param data expression matrix
-#' @param covariate numeric vector
-#' @param m mean of the original covariate
-#' @param d standard deviation of the original covariate
-#' @param cvfit object generated with GLMNET algorithm
-#' @param seed number
+#' The inputs can be either a list object generated from previous SuCoNets
+#' functions or individual condition variables.
+#'
+#' @param data list of expression matrices
+#' @param covariate list of numeric vectors
+#' @param m list of means of the original covariates
+#' @param d list of standard deviations of the original covariates
+#' @param cvfit list of objects generated with GLMNET algorithm
+#' @param genes.subset list of selected predictors for each condition
+#' @param sample.prob list of numeric vectors as weights when applying
+#'   \link[base]{sample}
 #'
 #' @return plot
 #' @export
-comparisonActualPredictedCovariate <- function(data, covariate, m, d, cvfit, seed, genes.subset){
-  set.seed(seed)
+#'
+#' @examples
+#' comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, genes.subset)
+#' comparisonActualPredictedCovariate(data[[1]], covariate[[1]], m[[1]], d[[1]], cvfit[[1]], genes.subset[[1]])
+comparisonActualPredictedCovariate <- function(data, covariate, m, d, cvfit, genes.subset, sample.prob = c()){
+  if(!is(data, "list")){
+    data <- list(data)
+    covariate <- list(covariate)
+    m <- list(m)
+    d <- list(d)
+    cvfit <- list(cvfit)
+    genes.subset <- list(genes.subset)
+    sample.prob <- list(sample.prob)
+  }
 
-  ind.train <- sample(1:ncol(data), 0.8*ncol(data))
+  r = foreach(i = 1:length(data)) %:% when(i) %do%{
+    data.i = data[[i]]
+    covariate.i = covariate[[i]]
+    m.i = m[[i]]
+    d.i = d[[i]]
+    cvfit.i = cvfit[[i]]
+    genes.subset.i = genes.subset[[i]]
+    sample.prob.i = sample.prob[[i]]
+    set.seed(0)
 
-  data.train <-  t(data[genes.subset, ind.train])
-  covariate.train <-  covariate[ind.train]
+    ind.train = sample(1:ncol(data.i), 0.8*ncol(data.i), prob = sample.prob.i)
 
-  data.test <- t(data[as.character(genes.subset),-ind.train])
-  covariate.test <- covariate[-ind.train]
+    data.train = t(data.i[genes.subset.i, ind.train])
+    covariate.train = covariate.i[ind.train]
+    data.test = t(data.i[genes.subset.i, -ind.train])
+    covariate.test = covariate.i[-ind.train]
 
-  predict.cvfit.test <- stats::predict(cvfit, newx = data.test,type = "response",s = "lambda.min")
-  predict.cvfit.train <- stats::predict(cvfit, newx = data.train,type = "response",s = "lambda.min")
+    predict.cvfit.train = stats::predict(cvfit.i, newx = data.train, type = "response", s = "lambda.min")
+    predict.cvfit.test = stats::predict(cvfit.i, newx = data.test, type = "response", s = "lambda.min")
 
+    covariate.real.train = covariate.train*d.i + m.i
+    covariate.real.test = covariate.test*d.i + m.i
+    covariate.predicha.train = predict.cvfit.train*d.i + m.i
+    covariate.predicha.test = predict.cvfit.test*d.i + m.i
 
-  covariate.real.test <- covariate.test*d+m
-  covariate.predicha.test <- predict.cvfit.test*d+m
+    dats = data.frame(x = c(covariate.real.test, covariate.real.train),
+                      y = c(covariate.predicha.test, covariate.predicha.train),
+                      type = as.factor(c(rep("Test", ncol(data.i)-length(ind.train)), rep("Train", length(ind.train)))))
 
-  covariate.real.train <- covariate.train*d+m
-  covariate.predicha.train <- predict.cvfit.train*d+m
+    p = ggplot2::ggplot(dats, ggplot2::aes(x=dats[,1],y=dats[,2], color=type)) +
+      #ggplot2::geom_abline(ggplot2::aes(fill = "black"), intercept = 0, slope = 1) +
+      ggplot2::geom_abline(ggplot2::aes(slope=1, intercept=0), show.legend = F) +
+      ggplot2::geom_point() +
+      ggplot2::geom_smooth(method='lm', se = FALSE) +
+      ggplot2::xlab("Real covariate") +
+      ggplot2::ylab("Predicted covariate") +
+      ggplot2::labs(title="Comparison between real values of the covariate and predicted values")
+    if(length(data) != 1) p = p +
+      ggplot2::labs(title=paste0("Comparison real covariate vs predicted - ", names(data)[i]))
 
-  dats <- data.frame(x = c(covariate.real.test, covariate.real.train), y = c(covariate.predicha.test, covariate.predicha.train), type = as.factor(c(rep("Test", ncol(data)-length(ind.train)), rep("Train", length(ind.train)))))
-
-  ggplot2::ggplot(dats, ggplot2::aes(x=dats[,1],y=dats[,2], color=type)) +
-    ggplot2::geom_point() +
-    ggplot2::geom_smooth(method='lm',se = FALSE) +
-    ggplot2::xlab("Real covariate")+
-    ggplot2::ylab("Predicted covariate")+
-    ggplot2::labs(title="Comparison between real values of the covariate and predicted values")
-
-
+    print(p)
+  };
 }
+
 
 #' Distribution of individuals according to the covariate
 #'
-#' @param data expression matrix
-#' @param covariate numeric vector
-#' @param selectedGenes dataframe with the genes selected as important by GLMNET algorithm
-#' @param m mean of the original covariate
-#' @param d standard deviation of the original covariate
+#' The inputs can be either a list object generated from previous SuCoNets
+#' functions or individual condition variables
+#'
+#' @param data list of expression matrices
+#' @param covariate list of numeric vectors
+#' @param selected.genes list of dataframes with the genes selected as important
+#'   by GLMNET algorithm
+#' @param m list of meas of the original covariates
+#' @param d list of standard deviations of the original covariates
 #'
 #' @return plot
 #' @export
-distributionIndividualsCovariate <- function(data, covariate, selectedGenes, m, d){
-  e <- min(covariate*d+m):max(covariate*d+m)
-  dfGraf<- data.frame(e)
-  dfGraf$col <- grDevices::colorRampPalette(c("blue", "red"))(length(e))
+#'
+#' @examples
+#' distributionIndividualsCovariate(data, covariate, selected.genes, m, d)
+#' distributionIndividualsCovariate(data[[1]], covariate[[1]], selected.genes[[1]], m[[1]], d[[1]])
+distributionIndividualsCovariate <- function(data, covariate, selected.genes, m, d){
+  if(!is(data, "list")){
+    data = list(data)
+    covariate = list(covariate)
+    selected.genes = list(selected.genes)
+    m = list(m)
+    d = list(d)
+  }
 
-  ind <- selectRows(rownames(data),selectedGenes[,1])
-  data.genes <-data[ind,]
-  pca.result <- stats::prcomp(t(data.genes))
+  r = foreach(i = 1:length(data)) %do% {
+    data.i = data[[i]]
+    covariate.i = covariate[[i]]
+    selected.genes.i = selected.genes[[i]]
+    m.i = m[[i]]
+    d.i = d[[i]]
 
-  pcas <- as.data.frame(pca.result$x,stringsAsFactors=F)
-  pcas <- cbind(covariate.genes = as.numeric(covariate*d+m), pcas)
-  pcas$col <- dfGraf$col[pcas$covariate.genes-19]
+    e = min(covariate.i*d.i + m.i):max(covariate.i*d.i + m.i)
+    dfGraf = data.frame(e)
+    dfGraf$col = grDevices::colorRampPalette(c("blue", "red"))(length(e))
 
-  graphics::plot(x = pcas$PC1, y = pcas$PC2, col=pcas$col, pch = 20, xlab = "First Principal Component", ylab = "Second Principal Component", panel.first = graphics::grid())
+    ind = selectRows(rownames(data.i), selected.genes.i[, 1])
+    data.genes = data.i[ind, ]
+    pca.result = stats::prcomp(t(data.genes))
 
+    pcas = as.data.frame(pca.result$x, stringsAsFactors = F)
+    pcas = cbind(covariate.genes = as.numeric(covariate.i*d.i + m.i), pcas)
+    pcas$col = dfGraf$col[pcas$covariate.genes - 19]
+
+    graphics::plot(x = pcas$PC1,
+                   y = pcas$PC2,
+                   col = pcas$col,
+                   pch = 20,
+                   xlab = "First Principal Component",
+                   ylab = "Second Principal Component",
+                   panel.first = graphics::grid())
+  };
 }
 
-#' Histogram of gene frequencies
+#' Histogram of gene frequencies (DEPRECATED)
 #'
 #' @param gs.our.genes data.frame
 #'
@@ -83,7 +144,117 @@ histGeneFreq <- function(gs.our.genes){
 }
 
 
-#' Bar Plot of the RMSE values for each tissue
+#' Bar Plot of the RMSE values for each condition
+#'
+#' The inputs can be either a list object generated from previous SuCoNets
+#' functions or individual condition variables.
+#'
+#' @param data list of expression matrices
+#' @param covariate list of numeric vectors
+#' @param genes.subset list of selected predictors for each condition
+#' @param B number of bootstrap resamples. Defaults to 20
+#' @param sample.prob list of numeric vectors as weights when applying
+#'   \link[base]{sample}
+#' @param k number of kfolds to execute in the GLMNET algorithm
+#'   (\link[glmnet]{cv.glmnet}). Defaults to 10
+#' @param do.boxplot boolean to do a boxplot or a barplot. Defaults to False
+#'
+#' @return ggplot2 object
+#' @export
+plotRMSE <- function(data, covariate, genes.subset, m = 0, d = 1, B = 20, sample.prob = c(), k = 10, do.boxplot = FALSE){
+  if(!is(data, "list")){
+    data = list(data)
+    covariate = list(covariate)
+    genes.subset= list(genes.subset)
+    m = list(m)
+    d = list(d)
+  }else{
+    if(!is(m, "list") || !is(d, "list")){
+      m = rep(list(0), length(data))
+      d = rep(list(1), length(data))
+    }
+  }
+
+  df.rmse = foreach(i = 1:length(data), .combine = "rbind") %dopar% {
+    data.i = data[[i]]
+    covariate.i = covariate[[i]]
+    genes.subset.i = genes.subset[[i]]
+    sample.prob.i = sample.prob[[i]]
+    m.i = m[[i]]
+    d.i = d[[i]]
+
+    set.seed(0)
+    seeds = sample(999999999, B)
+    df.rmse.i <- foreach(j = 1:B, .combine = "rbind") %do%{
+      set.seed(seeds[j])
+      ind.train.B = sample(1:ncol(data.i), ncol(data.i), replace = TRUE, prob = sample.prob.i)
+
+      data.train.B = t(data.i[genes.subset.i, ind.train.B])
+      covariate.train.B = covariate.i[ind.train.B]
+
+      data.test.B = t(data.i[genes.subset.i, -ind.train.B])
+      covariate.test.B = covariate.i[-ind.train.B]
+
+      cvfit.B = glmnet::cv.glmnet(data.train.B, covariate.train.B, alpha=1, kfold=k, family = "gaussian")
+
+      pred.train.B = predict(cvfit.B, s = "lambda.min", newx = data.train.B, type = "response")
+      pred.test.B = predict(cvfit.B, s = "lambda.min", newx = data.test.B, type = "response")
+
+      # if(!missing(m) & !missing(d)){
+      #   pred.train.B = pred.train.B*d.i + m.i
+      #   pred.test.B = pred.test.B*d.i + m.i
+      #   covariate.train.B = covariate.train.B*d.i + m.i
+      #   covariate.test.B = covariate.train.B*d.i + m.i
+      rmse.train.B = MLmetrics::RMSE(pred.train.B*d.i + m.i, covariate.train.B*d.i + m.i)
+      rmse.test.B = MLmetrics::RMSE(pred.test.B*d.i + m.i, covariate.test.B*d.i + m.i)
+
+      if(is.null(names(data)[i])) cond.name = "Condition" else cond.name = names(data)[i]
+
+      data.frame(Condition = cond.name, rmse.train = rmse.train.B, rmse.test = rmse.test.B)
+    }
+
+    df.rmse.i
+  }
+
+  if(!do.boxplot){
+    df.rmse.group = df.rmse %>%
+      dplyr::group_by(Condition) %>%
+      dplyr::summarize(mean.rmse.train = mean(rmse.train),
+                       sd.rmse.train = sd(rmse.train),
+                       mean.rmse.test = mean(rmse.test),
+                       sd.rmse.test = sd(rmse.test))
+
+    rmse.plot = ggplot2::ggplot(df.rmse.group, ggplot2::aes(x = Condition, y = mean.rmse.test)) +
+      ggplot2::geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+      #ggplot2::geom_bar(data = df.rmse.group, ggplot2::aes(x = Condition, y = mean.rmse.train)) +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = mean.rmse.test - sd.rmse.test,
+                                          ymax = mean.rmse.test + sd.rmse.test),
+                             width = .2,
+                             position = ggplot2::position_dodge(.9)) +
+      ggplot2::scale_y_continuous(expand = c(0, 0),
+                                  limits = c(0, 1.07*(max(df.rmse.group$mean.rmse.test) +
+                                                        max(df.rmse.group$sd.rmse.test))))
+  }else{
+    rmse.plot = ggplot2::ggplot(df.rmse, ggplot2::aes(x = Condition, y = rmse.test)) +
+      ggplot2::geom_boxplot(fill = "steelblue")
+      #ggplot2::stat_summary(fun = mean, geom="point", size=2, color="red") +
+  }
+
+  rmse.plot = rmse.plot +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(face = "bold", angle = -75, vjust = 0.5, hjust = 0)) +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(face = "bold")) +
+    ggplot2::theme(axis.title.x = ggplot2::element_blank()) +
+    ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = .5)) +
+    ggplot2::theme(aspect.ratio = 9/20) +
+    ggplot2::labs(y = "RMSE") +
+    ggplot2::ggtitle(bquote("RMSE by condition for test sample"))
+
+  if(length(data) == 1) rmse.plot = rmse.plot + ggplot2::theme(aspect.ratio = 20/9)
+  return(rmse.plot)
+}
+
+
+#' Bar Plot of the RMSE values for each tissue (DEPRECATED)
 #'
 #' @param tissues list of strings containing the tissue names
 #' @param dataset_folder path to the dataset folder
@@ -92,199 +263,94 @@ histGeneFreq <- function(gs.our.genes){
 #'
 #' @return plot
 #' @export
-boot.RMSE <- function(tissues, dataset_folder, models_folder, B = 20){
-  tissues_short = gsub(" ", "", tissues, fixed = TRUE)
-  len_tissue = length(tissues)
-
-  df_rmse <- foreach(i = 1:len_tissue, .combine = "rbind") %:% when(i) %dopar%{
-    bt = tissues_short[i]
-    cat("(", i, "/", len_bt ,") Comenzamos con ", bt, "\n", sep="")
-
-    data <- readRDS(paste0(datasets_folder, "data_", bt, ".rds"))
-    age <- readRDS(paste0(datasets_folder, "age_", bt, ".rds"))
-    m <- age[1]
-    d <- age[2]
-    age <- age[-c(1,2)]
-    #cvfit <- readRDS(paste0(models_folder, "cvfit_", bt, ".rds"))
-    genes.subset <- readRDS(paste0(models_folder, "genes.subset_", bt, ".rds"))
-
-    rmse.bt.train <- numeric(B)
-    rmse.bt.test <- numeric(B)
-    foreach(j = 1:B) %do%{
-      ind.train <- sample(1:ncol(data), ncol(data), replace = TRUE)
-
-      data.train <- t(data[genes.subset ,ind.train])
-      covariate.train <- age[ind.train]
-      data.test <- t(data[genes.subset, -unique(ind.train)])
-      covariate.test <- age[-unique(ind.train)]
-
-      cvfit <- glmnet::cv.glmnet(data.train, covariate.train, alpha=1, family = "gaussian")
-      selected.genes <- detectGenes("", "", cvfit)
-
-      pred.train <- predict(cvfit, s = "lambda.min", newx = data.train, type = "response")
-      rmse.bt.train[j] <- get.RMSE(covariate.train, pred.train)
-
-      pred.test <- predict(cvfit, s = "lambda.min", newx = data.test, type = "response")
-      rmse.bt.test[j] <- get.RMSE(covariate.test, pred.test)
-    }
-
-    data.frame(Tissue = str_split(tissues[i], " - ", simplify = TRUE)[, 2],
-               "Train RMSE" = mean(rmse.bt.train),
-               "Train std" = sd(rmse.bt.train),
-               "Test RMSE" = mean(rmse.bt.test),
-               "Test std" = sd(rmse.bt.test))
+plotR2adj <- function(data, covariate, genes.subset, B = 20, sample.prob = c(), k = 10, plot.split = "test", do.boxplot = FALSE){
+  if(!is(data, "list")){
+    data = list(data)
+    covariate = list(covariate)
+    genes.subset= list(genes.subset)
   }
 
-  df_rmse = df_rmse %>% arrange(desc(Tissue))
-  rmse_plot <- ggplot(data = df_rmse, aes(x = as.character(Tissue), y = Test.RMSE)) +
-    geom_bar(stat="identity", position=position_dodge(), fill="steelblue", color="black") +
-    geom_errorbar(aes(ymin=Test.RMSE-Test.std, ymax=Test.RMSE+Test.std), width=.2,
-                  position=position_dodge(.9)) +
-    theme(axis.text.x = element_text(face = "bold", angle = -75, vjust = 0.5, hjust=0)) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 1.5, hjust=1)) +
-    theme(axis.text.y = element_text(face = "bold")) +
-    theme(aspect.ratio = 9/20) +
-    theme(axis.title.x=element_blank()) +
-    labs(y = "RMSE") +
-    ggtitle(bquote("RMSE por tejido")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
-    theme(panel.border = element_rect(colour = "black", fill=NA, size=.5))
+  df.r2_adj = foreach(i = 1:length(data), .combine = "rbind") %dopar% {
+    data.i = data[[i]]
+    covariate.i = covariate[[i]]
+    genes.subset.i = genes.subset[[i]]
+    sample.prob.i = sample.prob[[i]]
 
-  rmse_plot
-}
+    set.seed(0)
+    seeds = sample(999999999, B)
+    df.r2_adj.i <- foreach(j = 1:B, .combine = "rbind") %do%{
+      set.seed(seeds[j])
+      ind.train.B = sample(1:ncol(data.i), ncol(data.i), replace = TRUE, prob = sample.prob.i)
 
+      data.train.B = t(data.i[genes.subset.i, ind.train.B])
+      covariate.train.B = covariate.i[ind.train.B]
 
-#' Bar Plot of the RMSE values for each tissue
-#'
-#' @param tissues list of strings containing the tissue names
-#' @param dataset_folder path to the dataset folder
-#' @param models_folder path to the models folder
-#' @param B number of bootstrap resamples (default 20)
-#'
-#' @return plot
-#' @export
-boot.r2_adj <- function(tissues, dataset_folder, models_folder, B = 20){
-  tissues_short = gsub(" ", "", tissues, fixed = TRUE)
-  len_tissue = length(tissues)
+      data.test.B = t(data.i[genes.subset.i, -ind.train.B])
+      covariate.test.B = covariate.i[-ind.train.B]
 
-  df_r2_adj <- foreach(i = 1:len_tissue, .combine = "rbind") %:% when(i) %dopar%{
-    bt = tissues_short[i]
-    cat("(", i, "/", len_bt ,") Comenzamos con ", bt, "\n", sep="")
+      cvfit.B = glmnet::cv.glmnet(data.train.B, covariate.train.B, alpha=1, kfold=k, family = "gaussian")
+      selected.genes.B <- detectGenes(cvfit.B)
 
-    data <- readRDS(paste0(datasets_folder, "data_", bt, ".rds"))
-    age <- readRDS(paste0(datasets_folder, "age_", bt, ".rds"))
-    m <- age[1]
-    d <- age[2]
-    age <- age[-c(1,2)]
-    cvfit <- readRDS(paste0(models_folder, "cvfit_", bt, ".rds"))
-    genes.subset <- readRDS(paste0(models_folder, "genes.subset_", bt, ".rds"))
+      pred.train.B = predict(cvfit.B, s = "lambda.min", newx = data.train.B, type = "response")
+      pred.test.B = predict(cvfit.B, s = "lambda.min", newx = data.test.B, type = "response")
 
-    r2_adj.bt.train <- numeric(B)
-    r2_adj.bt.test <- numeric(B)
-    foreach(j = 1:B) %do%{
-      ind.train <- sample(1:ncol(data), ncol(data), replace = TRUE)
+      r2_adj.train.B = get.r2_adj(pred.train.B, covariate.train.B, length(selected.genes[, 1]))
+      r2_adj.test.B = get.r2_adj(pred.test.B, covariate.test.B, length(selected.genes[, 1]))
 
-      data.train <- t(data[genes.subset, ind.train])
-      covariate.train <- age[ind.train]
-      data.test <- t(data[genes.subset, -unique(ind.train)])
-      covariate.test <- age[-unique(ind.train)]
+      if(is.null(names(data)[i])) cond.name = "Condition" else cond.name = names(data)[i]
 
-      cvfit <- glmnet::cv.glmnet(data.train, covariate.train, alpha=1, family = "gaussian")
-      selected.genes <- detectGenes("", "", cvfit)
-
-      pred.train <- predict(cvfit, s = "lambda.min", newx = data.train, type = "response")
-      r2_adj.bt.train[j] <- get.r2_adj(covariate.train, pred.train, length(selected.genes[, 1]))
-
-      pred.test <- predict(cvfit, s = "lambda.min", newx = data.test, type = "response")
-      r2_adj.bt.test[j] <- get.r2_adj(covariate.test, pred.test, length(selected.genes[, 1]))
+      data.frame(Condition = cond.name, r2_adj.train = r2_adj.train.B, r2_adj.test = r2_adj.test.B)
     }
 
-    data.frame(Tissue = str_split(tissues[i], " - ", simplify = TRUE)[, 2],
-               "Train r2_adj" = mean(r2_adj.bt.train),
-               "Train std" = sd(r2_adj.bt.train),
-               "Test r2_adj" = mean(r2_adj.bt.test),
-               "Test std" = sd(r2_adj.bt.test))
+    df.r2_adj.i
   }
 
-  r2_adj_plot <- ggplot(data = df_r2_adj, aes(x = as.character(Tissue), y = Train.r2_adj)) +
-    geom_bar(stat="identity", position=position_dodge(), fill="steelblue", color="black") +
-    geom_errorbar(aes(ymin=Train.r2_adj-Train.std, ymax=Train.r2_adj+Train.std), width=.2,
-                  position=position_dodge(.9)) +
-    coord_cartesian(ylim=c(0, 1)) +
-    theme(axis.text.x = element_text(face = "bold", angle = -75, vjust = 0.5, hjust=0)) +
-    theme(axis.title.y = element_text(angle = 90, vjust = 1.5, hjust=1)) +
-    theme(axis.text.y = element_text(face = "bold")) +
-    theme(aspect.ratio = 9/20) +
-    theme(axis.title.x=element_blank()) +
-    labs(y = "R^2 adjusted") +
-    ggtitle(bquote("R^2 adjusted por tejido en Train set")) +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
-    theme(panel.border = element_rect(colour = "black", fill=NA, size=.5))
+  if(!do.boxplot){
+    df.r2_adj.group = df.rmse %>%
+      dplyr::group_by(Condition)
 
-  r2_adj_plot
+    if(plot.split == "test"){
+      df.r2_adj.group = df.r2_adj.group %>%
+        dplyr::summarize(mean.r2_adj = mean(r2_adj.test),
+                         sd.r2_adj = sd(r2_adj.test))
+    }else{
+      df.r2_adj.group = df.r2_adj.group %>%
+        dplyr::summarize(mean.r2_adj = mean(r2_adj.train),
+                         sd.r2_adj = sd(r2_adj.train))
+    }
+
+    r2_adj.plot = ggplot2::ggplot(df.r2_adj.group, ggplot2::aes(x = Condition, y = mean.r2_adj.test)) +
+      ggplot2::geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = mean.r2_adj.test - sd.r2_adj.test,
+                                          ymax = mean.r2_adj.test + sd.r2_adj.test),
+                             width = .2,
+                             position = ggplot2::position_dodge(.9)) +
+      ggplot2::scale_y_continuous(expand = c(0, 0),
+                                  limits = c(0, 1.07*(max(df.rmse.group$mean.rmse.test) +
+                                                        max(df.rmse.group$sd.rmse.test))))
+  }else{
+    rmse.plot = ggplot2::ggplot(df.rmse, ggplot2::aes(x = Condition, y = rmse.test)) +
+      ggplot2::geom_boxplot(fill = "steelblue")
+      #ggplot2::stat_summary(fun = mean, geom="point", size=2, color="red") +
+  }
+
+  rmse.plot = rmse.plot +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(face = "bold", angle = -75, vjust = 0.5, hjust = 0)) +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(face = "bold")) +
+    ggplot2::theme(axis.title.x = ggplot2::element_blank()) +
+    ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = .5)) +
+    ggplot2::theme(aspect.ratio = 9/20) +
+    ggplot2::labs(y = "RMSE") +
+    ggplot2::ggtitle(bquote("RMSE by condition"))
+
+  if(length(data) == 1) rmse.plot = rmse.plot + ggplot2::theme(aspect.ratio = 20/9)
+  return(rmse.plot)
 }
-
-
-#' Heatmap of the coincidences in genes selected for each tissue
-#'
-#' @param tissues list of strings containing the tissue names
-#' @param dataset_folder path to the dataset folder
-#' @param models_folder path to the models folder
-#'
-#' @return plot
-#' @export
-plotCoincidences <- function(tissues, dataset_folder, models_folder){
-  tissues_short = gsub(" ", "", tissues, fixed = TRUE)
-  heat_map = matrix(0, nrow=length(brain_tissues), ncol=length((brain_tissues)))
-
-  r =
-    foreach(i = 1:len_bt) %:%
-      foreach(j = i:len_bt) %do% {
-        tissue_i = brain_tissues_short[i]
-        tissue_j = brain_tissues_short[j]
-
-        selected.genes.i = readRDS(paste0(models_folder, "selected.genes_", tissue_i, ".rds"))
-        selected.genes.j = readRDS(paste0(models_folder, "selected.genes_", tissue_j, ".rds"))
-
-        common.genes = intersect(selected.genes.i[, 1], selected.genes.j[, 1])
-        heat_map[i, j] = length(common.genes)
-        heat_map[j, i] = length(common.genes)
-        cat("Common between", tissue_i, "and", tissue_j, ":", length(common.genes), "\n")
-      }
-
-  plot_data <- expand.grid(X=str_replace(brain_tissues, "Brain - ", ""), Y=str_replace(brain_tissues, "Brain - ", ""))
-  plot_data$Coincidencias <- c(heat_map)
-  diag(heat_map) <- NA
-  plot_data$Color_Coincidencias <- c(heat_map)
-
-  heat_plot <- ggplot(plot_data, aes(x = X, y = Y, fill=Color_Coincidencias)) +
-    geom_tile(color = "black", lwd = 0.2, linetype = 1) +
-    geom_text(aes(label = round(Coincidencias, 1))) +
-    scale_x_discrete(position = "top") +
-    scale_y_discrete(limits=rev) +
-    theme(axis.text.x = element_text(face = "bold", angle = 75, vjust = 0.5, hjust=0)) +
-    theme(axis.text.y = element_text(face = "bold", angle = 15, vjust = 0.5, hjust=1)) +
-    theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
-    scale_fill_continuous(name = "Coincidencias") +
-    theme(aspect.ratio = 1)
-
-  heat_plot
-}
-
-## Bar plot of RMSE for all tissues
-##
-## @param tissue list of characters containing the names of the tissue to look for files
-## @param model_folder path to the
-##
-## @return plot
-## @export
-# barPlotRMSE <- function(tissues, dataset_folder, models_folder){
+# boot.r2_adj <- function(tissues, dataset_folder, models_folder, B = 20){
 #   tissues_short = gsub(" ", "", tissues, fixed = TRUE)
 #   len_tissue = length(tissues)
-#   rmse.train <- numeric(len_tissue)
-#   rmse.test <- numeric(len_tissue)
 #
-#   r <- foreach(i = 1:len_tissue) %:% when(i) %do%{
+#   df_r2_adj <- foreach(i = 1:len_tissue, .combine = "rbind") %:% when(i) %dopar%{
 #     bt = tissues_short[i]
 #     cat("(", i, "/", len_bt ,") Comenzamos con ", bt, "\n", sep="")
 #
@@ -294,42 +360,93 @@ plotCoincidences <- function(tissues, dataset_folder, models_folder){
 #     d <- age[2]
 #     age <- age[-c(1,2)]
 #     cvfit <- readRDS(paste0(models_folder, "cvfit_", bt, ".rds"))
-#     selected.genes <- readRDS(paste0(models_folder, "selected.genes_", bt, ".rds"))
-#     all.genes <- readRDS(paste0(models_folder, "all.genes_", bt, ".rds"))
+#     genes.subset <- readRDS(paste0(models_folder, "genes.subset_", bt, ".rds"))
 #
-#     genes.subset = all.genes %>% filter(Freq >= 5) %>% select(Genes)
+#     r2_adj.bt.train <- numeric(B)
+#     r2_adj.bt.test <- numeric(B)
+#     foreach(j = 1:B) %do%{
+#       ind.train <- sample(1:ncol(data), ncol(data), replace = TRUE)
 #
-#     set.seed(0)
-#     data.subset <- data[row.names(data) %in% genes.subset$Genes, ]
-#     ind.train <- sample(1:ncol(data.subset), 0.8*ncol(data.subset))
+#       data.train <- t(data[genes.subset, ind.train])
+#       covariate.train <- age[ind.train]
+#       data.test <- t(data[genes.subset, -unique(ind.train)])
+#       covariate.test <- age[-unique(ind.train)]
 #
-#     data.train <- t(data.subset[,ind.train])
-#     age.train <- age[ind.train]
-#     data.test <- t(data.subset[, -ind.train])
-#     age.test <- age[-ind.train]
+#       cvfit <- glmnet::cv.glmnet(data.train, covariate.train, alpha=1, family = "gaussian")
+#       selected.genes <- detectGenes(cvfit)
 #
-#     pred.train <- predict(cvfit, s = "lambda.min", newx = data.train, type = "response")
-#     pred.test <- predict(cvfit, s = "lambda.min", newx = data.test, type = "response")
+#       pred.train <- glmnet::predict.glmnet(cvfit, s = "lambda.min", newx = data.train, type = "response")
+#       r2_adj.bt.train[j] <- get.r2_adj(covariate.train, pred.train, length(selected.genes[, 1]))
 #
-#     rmse.train[i] <- get.RMSE(age.train, pred.train)
-#     rmse.test[i] <- get.RMSE(age.test, pred.test)
+#       pred.test <- glmnet::predict.glmnet(cvfit, s = "lambda.min", newx = data.test, type = "response")
+#       r2_adj.bt.test[j] <- get.r2_adj(covariate.test, pred.test, length(selected.genes[, 1]))
+#     }
+#
+#     data.frame(Tissue = str_split(tissues[i], " - ", simplify = TRUE)[, 2],
+#                "Train r2_adj" = mean(r2_adj.bt.train),
+#                "Train std" = sd(r2_adj.bt.train),
+#                "Test r2_adj" = mean(r2_adj.bt.test),
+#                "Test std" = sd(r2_adj.bt.test))
 #   }
 #
-#   rmse <- data.frame(cbind(str_split(brain_tissues, " - ", simplify = TRUE)[, 2], rmse.train, rmse.test))
-#   colnames(rmse) <- c("Tissue", "Train", "Test")
-#   rmse_long <- reshape2::melt(rmse, id.vars = c("Tissue"), variable.name = "Dataset", value.name = "rmse")
-#   rmse_long$rmse <- as.numeric(pmax(rmse_long$rmse, 0))
-#
-#   rmse_plot <- ggplot(data = rmse_long, aes(x = Tissue, y = rmse, fill = Dataset)) +
-#     geom_bar(stat="identity", position=position_dodge()) +
+#   r2_adj_plot <- ggplot(data = df_r2_adj, aes(x = as.character(Tissue), y = Train.r2_adj)) +
+#     geom_bar(stat="identity", position=position_dodge(), fill="steelblue", color="black") +
+#     geom_errorbar(aes(ymin=Train.r2_adj-Train.std, ymax=Train.r2_adj+Train.std), width=.2,
+#                   position=position_dodge(.9)) +
+#     coord_cartesian(ylim=c(0, 1)) +
 #     theme(axis.text.x = element_text(face = "bold", angle = -75, vjust = 0.5, hjust=0)) +
 #     theme(axis.title.y = element_text(angle = 90, vjust = 1.5, hjust=1)) +
 #     theme(axis.text.y = element_text(face = "bold")) +
 #     theme(aspect.ratio = 9/20) +
 #     theme(axis.title.x=element_blank()) +
-#     ggtitle(bquote("RMSE por tejido y dataset")) +
-#     scale_y_continuous(expand = c(0, 0), limits = c(0, 1))
+#     labs(y = "R^2 adjusted") +
+#     ggtitle(bquote("R^2 adjusted por tejido en Train set")) +
+#     scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+#     theme(panel.border = element_rect(colour = "black", fill=NA, size=.5))
 #
-#   rmse_plot
+#   r2_adj_plot
 # }
 
+
+#' Heatmap of the coincidences in genes selected for each condition
+#'
+#' The inputs can be either a list object generated from previous SuCoNets
+#' functions or individual condition variables.
+#'
+#' @param selected.genes list of dataframes with the genes selected as important
+#'   by GLMNET algorithm
+#'
+#' @return ggplot2 object
+#' @export
+plotCoincidences <- function(selected.genes){
+  if(!is(selected.genes, "list")){
+    print("This function needs the selected genes for different conditions. Only genes for one was supplied")
+    return()
+  }
+
+  heat_map = matrix(0, nrow=length(selected.genes), ncol=length(selected.genes))
+  foreach(i = 1:length(selected.genes)) %:%
+    foreach(j = i:length(selected.genes)) %do% {
+      common.genes = length(intersect(selected.genes[[i]][, 1], selected.genes[[j]][, 1]))
+      heat_map[i, j] = common.genes
+      heat_map[j, i] = common.genes
+  };
+
+  plot.coin = expand.grid(X = names(selected.genes), Y = names(selected.genes))
+  plot.coin$coin = c(heat_map)
+  diag(heat_map) = NA
+  plot.coin$color_coin = c(heat_map)
+
+  heat.plot <- ggplot2::ggplot(plot.coin, ggplot2::aes(x = X, y = Y, fill = color_coin)) +
+    ggplot2::geom_tile(color = "black", lwd = 0.2, linetype = 1)+
+    ggplot2::geom_text(ggplot2::aes(label = round(coin, 1))) +
+    ggplot2::scale_x_discrete(position = "top") +
+    ggplot2::scale_y_discrete(limits = rev) +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(face = "bold", angle = 75, vjust = 0.5, hjust = 0)) +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(face = "bold", angle = 15, vjust = 0.5, hjust = 1)) +
+    ggplot2::theme(axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank()) +
+    ggplot2::scale_fill_continuous(name = "Coincidencias") +
+    ggplot2::theme(aspect.ratio = 1)
+
+  return(heat.plot)
+}

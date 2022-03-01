@@ -4,16 +4,14 @@
 \alias{get.r2_adj}
 \title{Getting the adjusted r^2 value for a prediction}
 \usage{
-get.r2_adj(real.values, pred.values, k)
+get.r2_adj(pred.values, real.values, k)
 }
 \arguments{
-\item{real.values}{numeric vector of real values of the covariate}
-
 \item{pred.values}{numeric vector of predicted values of the covariate}
 
-\item{k}{number of predictors (length of selected genes)}
+\item{real.values}{numeric vector of real values of the covariate}
 
-\item{n}{number of samples}
+\item{k}{number of predictors (length of selected genes)}
 }
 \value{
 The calculated adjuted r^2

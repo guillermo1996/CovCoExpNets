@@ -13,9 +13,9 @@ scn(data)
 numerical matrix
 }
 \description{
-Scales a non-negative numerical matrix by applying the logarithm function
-and centers and normalizes its data. When applying the logarithm function
-it adds one to avoid calculating the logarithm of zero.
+Scales a non-negative numerical matrix by applying the logarithm function and
+centers and normalizes its data. When applying the logarithm function it adds
+one to avoid calculating the logarithm of zero.
 }
 \examples{
 m <- matrix(1:4, nr= 2, nc = 2)

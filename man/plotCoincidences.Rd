@@ -2,20 +2,18 @@
 % Please edit documentation in R/graphics.R
 \name{plotCoincidences}
 \alias{plotCoincidences}
-\title{Heatmap of the coincidences in genes selected for each tissue}
+\title{Heatmap of the coincidences in genes selected for each condition}
 \usage{
-plotCoincidences(tissues, dataset_folder, models_folder)
+plotCoincidences(selected.genes)
 }
 \arguments{
-\item{tissues}{list of strings containing the tissue names}
-
-\item{dataset_folder}{path to the dataset folder}
-
-\item{models_folder}{path to the models folder}
+\item{selected.genes}{list of dataframes with the genes selected as important
+by GLMNET algorithm}
 }
 \value{
-plot
+ggplot2 object
 }
 \description{
-Heatmap of the coincidences in genes selected for each tissue
+The inputs can be either a list object generated from previous SuCoNets
+functions or individual condition variables.
 }

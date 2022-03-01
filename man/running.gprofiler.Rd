@@ -4,16 +4,21 @@
 \alias{running.gprofiler}
 \title{Running the function gprofiler}
 \usage{
-running.gprofiler(selectedGenes, tam, data, df)
+running.gprofiler(selectedGenes, data, df, tam)
 }
 \arguments{
-\item{selectedGenes}{dataframe with the genes selected as important by GLMNET algorithm}
+\item{selectedGenes}{dataframe or list of dataframes, with the genes selected
+as important by GLMNET algorithm.}
 
-\item{tam}{numeric vector containing the number of genes forming each cluster}
+\item{data}{coexpression matrix. Also accepts a list of coexpression matrices
+for different conditions.}
 
-\item{data}{coexpression matrix}
+\item{df}{dataframe with clusters. Also accepts a list of dataframes for
+different conditions.}
 
-\item{df}{dataframe with clusters}
+\item{tam}{number: indicates the number of genes in each cluster. Only
+required for fixed networks. Must be the same as the one provided to
+coexpressionNetworkFixed.}
 }
 \value{
 The information obtained by running gprofiler

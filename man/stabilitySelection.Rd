@@ -2,7 +2,8 @@
 % Please edit documentation in R/gSelection.R
 \name{stabilitySelection}
 \alias{stabilitySelection}
-\title{Study of the stability of the selection of genes with which we are going to work.}
+\title{Study of the stability of the selection of genes with which we are going to
+work. (DEPRECATED)}
 \usage{
 stabilitySelection(data, covariate, selectedGenes)
 }
@@ -11,11 +12,13 @@ stabilitySelection(data, covariate, selectedGenes)
 
 \item{covariate}{numeric vector}
 
-\item{selectedGenes}{dataframe with the genes selected as important by GLMNET algorithm}
+\item{selectedGenes}{dataframe with the genes selected as important by GLMNET
+algorithm}
 }
 \value{
 Summary of gene frequency information
 }
 \description{
-Study of the stability of the selection of genes with which we are going to work.
+Study of the stability of the selection of genes with which we are going to
+work. (DEPRECATED)
 }

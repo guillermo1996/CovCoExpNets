@@ -4,19 +4,18 @@
 \alias{detectGenes}
 \title{Detect main genes}
 \usage{
-detectGenes(data, covariate, cvfit)
+detectGenes(cvfit)
 }
 \arguments{
-\item{data}{expression matrix}
-
-\item{covariate}{numeric vector}
-
-\item{cvfit}{GMLNET object}
+\item{cvfit}{list of GMLNET object}
 }
 \value{
-Dataframe containing the variables selected by the glmnet algorithm and the coefficients associated with these variables
+list of dataframe containing the variables selected by the glmnet
+algorithm and the coefficients associated with these variables. If only one
+object was supplied, the output will be one object and not a list.
 }
 \description{
-Given an expression matrix and a covariate, this function calculates the variables
-that best predict that covariate using glmnet algorithm
+This function calculates the variables that best predict a covariate using
+glmnet algorithm. The inputs can be either a list object generated from
+previous SuCoNets functions or individual condition variables.
 }

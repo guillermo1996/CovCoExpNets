@@ -4,18 +4,35 @@
 \alias{glmnetGenesSubset}
 \title{Run GLMNET algorithm with the selected genes}
 \usage{
-glmnetGenesSubset(data, covariate, genes.subset)
+glmnetGenesSubset(
+  data,
+  covariate,
+  genes.subset,
+  k = 10,
+  train.split = 0.8,
+  sample.prob = c()
+)
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of numeric expression matrices}
 
-\item{covariate}{numeric vector}
+\item{covariate}{list of numeric vectors}
 
-\item{predictor.genes}{dataframe containing the gene selection and their frequency}
+\item{genes.subset}{list of selected predictors for each condition}
+
+\item{k}{number of kfolds to execute in the GLMNET algorithm
+(\link[glmnet]{cv.glmnet}). Defaults to 10}
+
+\item{train.split}{numeric percentage of samples to take as train}
+
+\item{sample.prob}{list of numeric vectors as weights when applying
+\link[base]{sample}}
 }
 \value{
-The generated glmnet object
+list of the generated glmnet object. If only one data matrix is
+provided, it will return only one object, not a list.
 }
 \description{
-Run GLMNET algorithm with the selected genes
+The inputs can be either a list object generated from previous SuCoNets
+functions or individual condition variables.
 }

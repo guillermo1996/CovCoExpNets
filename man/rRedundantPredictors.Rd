@@ -2,7 +2,7 @@
 % Please edit documentation in R/dpreproc.R
 \name{rRedundantPredictors}
 \alias{rRedundantPredictors}
-\title{Remove redundant predictors}
+\title{Remove redundant predictors (DEPRECATED)}
 \usage{
 rRedundantPredictors(data)
 }
@@ -14,7 +14,8 @@ numerical matrix
 }
 \description{
 Reduces the number of predictors by eliminating those with near-zero variance
-and from pairs that have high correlation (>= 90\%) eliminate one of the two predictors.
+and from pairs that have high correlation (>= 90\%) eliminate one of the two
+predictors.
 }
 \examples{
 nycfl = nycflights13::flights

@@ -2,7 +2,7 @@
 % Please edit documentation in R/graphics.R
 \name{histGeneFreq}
 \alias{histGeneFreq}
-\title{Histogram of gene frequencies}
+\title{Histogram of gene frequencies (DEPRECATED)}
 \usage{
 histGeneFreq(gs.our.genes)
 }
@@ -13,5 +13,5 @@ histGeneFreq(gs.our.genes)
 plot
 }
 \description{
-Histogram of gene frequencies
+Histogram of gene frequencies (DEPRECATED)
 }

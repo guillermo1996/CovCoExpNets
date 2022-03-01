@@ -17,7 +17,7 @@ calculateCorrelation(x, y, tam)
 data.frame
 }
 \description{
-Given a coexpression matrix x and a gene (which is represented as a numerical vector) y from that matrix,
-this function returns a subset of x with the genes most correlated with y.
-The size of this subset is tam
+Given a coexpression matrix x and a gene (which is represented as a numerical
+vector) y from that matrix, this function returns a subset of x with the
+genes most correlated with y. The size of this subset is tam
 }

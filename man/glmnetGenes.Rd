@@ -2,7 +2,7 @@
 % Please edit documentation in R/gSelection.R
 \name{glmnetGenes}
 \alias{glmnetGenes}
-\title{Run GLMNET algorithm with the best seed}
+\title{Run GLMNET algorithm with the best seed (DEPRECATED)}
 \usage{
 glmnetGenes(data, covariate, seed)
 }
@@ -17,5 +17,5 @@ glmnetGenes(data, covariate, seed)
 The generated glmnet object
 }
 \description{
-Run GLMNET algorithm with the best seed
+Run GLMNET algorithm with the best seed (DEPRECATED)
 }

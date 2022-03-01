@@ -4,22 +4,28 @@
 \alias{distributionIndividualsCovariate}
 \title{Distribution of individuals according to the covariate}
 \usage{
-distributionIndividualsCovariate(data, covariate, selectedGenes, m, d)
+distributionIndividualsCovariate(data, covariate, selected.genes, m, d)
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of expression matrices}
 
-\item{covariate}{numeric vector}
+\item{covariate}{list of numeric vectors}
 
-\item{selectedGenes}{dataframe with the genes selected as important by GLMNET algorithm}
+\item{selected.genes}{list of dataframes with the genes selected as important
+by GLMNET algorithm}
 
-\item{m}{mean of the original covariate}
+\item{m}{list of meas of the original covariates}
 
-\item{d}{standard deviation of the original covariate}
+\item{d}{list of standard deviations of the original covariates}
 }
 \value{
 plot
 }
 \description{
-Distribution of individuals according to the covariate
+The inputs can be either a list object generated from previous SuCoNets
+functions or individual condition variables
+}
+\examples{
+distributionIndividualsCovariate(data, covariate, selected.genes, m, d)
+distributionIndividualsCovariate(data[[1]], covariate[[1]], selected.genes[[1]], m[[1]], d[[1]])
 }

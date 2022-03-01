@@ -15,8 +15,9 @@ jaccardIndex(df, tam)
 summary of Jaccard indexes
 }
 \description{
-Given a dataframe df formed by sets of genes, this function calculates the Jaccard index
-of each set with the rest and returns a summary with the information of all the calculated indexes.
-Among the information returned by this function is the median of all the indexes.
-The closer the median is to zero, the more independent the sets will be.
+Given a dataframe df formed by sets of genes, this function calculates the
+Jaccard index of each set with the rest and returns a summary with the
+information of all the calculated indexes. Among the information returned by
+this function is the median of all the indexes. The closer the median is to
+zero, the more independent the sets will be.
 }

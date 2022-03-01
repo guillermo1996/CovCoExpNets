@@ -2,22 +2,41 @@
 % Please edit documentation in R/gSelection.R
 \name{geneSelectionBootstrap}
 \alias{geneSelectionBootstrap}
-\title{Estimates the most common subset of genes to predict a covariate using Bootstrap}
+\title{Reduce the predictors to a subset using bootstrap}
 \usage{
-geneSelectionBootstrap(data, covariate, B = 20, n = 0.5)
+geneSelectionBootstrap(
+  data,
+  covariate,
+  B = 20,
+  k = 10,
+  n = 0.5,
+  sample.prob = c()
+)
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of numeric expression matrices}
 
-\item{covariate}{numeric vector}
+\item{covariate}{list of numeric vectors}
 
 \item{B}{number of bootstrap resamples (default 20)}
 
-\item{n}{numeric value. Minimum ratio of appearances to be selected}
+\item{k}{number of kfolds to execute in the GLMNET algorithm
+(\link[glmnet]{cv.glmnet}). Defaults to 10}
+
+\item{n}{numeric value. Minimum ratio of gene appearance to be selected as a
+predictor}
+
+\item{sample.prob}{list of numeric vectors as weights when applying
+\link[base]{sample}}
 }
 \value{
-List containing the genes selected and their frequency
+list of vectors containing the genes selected for each condition. If
+only one data matrix is provided, it will return the reduced matrix, not a
+list.
 }
 \description{
-Estimates the most common subset of genes to predict a covariate using Bootstrap
+Estimates the most common subset of genes that the GLMNET algorithm considers
+important to predict a covariate using bootstrap. The inputs can be either a
+list object generated from previous SuCoNets functions or individual
+condition variables.
 }

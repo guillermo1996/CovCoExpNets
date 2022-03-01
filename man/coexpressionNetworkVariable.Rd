@@ -4,18 +4,24 @@
 \alias{coexpressionNetworkVariable}
 \title{Co-expression network with variable cluster sizes}
 \usage{
-coexpressionNetworkVariable(data, selectedGenes, covariate)
+coexpressionNetworkVariable(data, covariate, selected.genes)
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of expression matrices}
 
-\item{selectedGenes}{dataframe with the genes selected by the glmnet algorithm and their coefficients}
+\item{covariate}{list of numeric vectors}
 
-\item{covariate}{numeric vector}
+\item{selected.genes}{list of dataframes with the genes selected as important
+by GLMNET algorithm}
 }
 \value{
-A dataframe where for each gene selected by glmnet appears the tam genes most correlated with it and a vector with cluster sizes
+A dataframe where for each gene selected by glmnet appears the tam
+genes most correlated with it and a vector with cluster sizes. If only one
+object was supplied, the output will be one object and not a list.
 }
 \description{
-Co-expression network with variable cluster sizes
+Calculate a coexpression network using the genes selected by the glmnet
+algorithm as the best predictors of a covariate. The inputs can be either a
+list object generated from previous SuCoNets functions or individual
+condition variables.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/gSelection.R
 \name{bestSeed}
 \alias{bestSeed}
-\title{Calculates the best seed for GLMNET algorithm}
+\title{Calculates the best seed for GLMNET algorithm (DEPRECATED)}
 \usage{
 bestSeed(data, covariate, useRMSE = FALSE)
 }
@@ -17,5 +17,5 @@ bestSeed(data, covariate, useRMSE = FALSE)
 a number representing the best seed
 }
 \description{
-Calculates the best seed for GLMNET algorithm
+Calculates the best seed for GLMNET algorithm (DEPRECATED)
 }

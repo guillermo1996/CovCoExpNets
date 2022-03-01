@@ -10,26 +10,34 @@ comparisonActualPredictedCovariate(
   m,
   d,
   cvfit,
-  seed,
-  genes.subset
+  genes.subset,
+  sample.prob = c()
 )
 }
 \arguments{
-\item{data}{expression matrix}
+\item{data}{list of expression matrices}
 
-\item{covariate}{numeric vector}
+\item{covariate}{list of numeric vectors}
 
-\item{m}{mean of the original covariate}
+\item{m}{list of means of the original covariates}
 
-\item{d}{standard deviation of the original covariate}
+\item{d}{list of standard deviations of the original covariates}
 
-\item{cvfit}{object generated with GLMNET algorithm}
+\item{cvfit}{list of objects generated with GLMNET algorithm}
 
-\item{seed}{number}
+\item{genes.subset}{list of selected predictors for each condition}
+
+\item{sample.prob}{list of numeric vectors as weights when applying
+\link[base]{sample}}
 }
 \value{
 plot
 }
 \description{
-Comparison between real values of the covariate and predicted values
+The inputs can be either a list object generated from previous SuCoNets
+functions or individual condition variables.
+}
+\examples{
+comparisonActualPredictedCovariate(data, covariate, m, d, cvfit, genes.subset)
+comparisonActualPredictedCovariate(data[[1]], covariate[[1]], m[[1]], d[[1]], cvfit[[1]], genes.subset[[1]])
 }

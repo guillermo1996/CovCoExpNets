@@ -7,13 +7,14 @@
 normalize(x)
 }
 \arguments{
-\item{x}{numeric vector}
+\item{x}{numeric vector or list of numeric vectors.}
 }
 \value{
-numeric vector
+numeric vector or list of numeric vectors.
 }
 \description{
-Normalizes a vector by subtracting its mean and dividing by its standard deviation
+Normalizes a vector by subtracting its mean and dividing by its standard
+deviation
 }
 \examples{
 normalize(1:4)
