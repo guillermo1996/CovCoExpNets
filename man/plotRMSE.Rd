@@ -2,41 +2,35 @@
 % Please edit documentation in R/graphics.R
 \name{plotRMSE}
 \alias{plotRMSE}
-\title{Bar Plot of the RMSE values for each condition}
+\title{Plots the RMSE}
 \usage{
 plotRMSE(
-  data,
-  covariate,
-  genes.subset,
-  m = 0,
-  d = 1,
-  B = 20,
-  sample.prob = c(),
-  k = 10,
-  do.boxplot = FALSE
+  df.group,
+  output_file = NA,
+  title = "",
+  ylab = "",
+  legend.title = "Algorithm",
+  first.arg = "GLMNET",
+  second.arg = "CovCoExpNets"
 )
 }
 \arguments{
-\item{data}{list of expression matrices}
+\item{df.group}{data.frame obtained from the function \link[CovCoExpNets]{groupMetrics}}
 
-\item{covariate}{list of numeric vectors}
+\item{output_file}{path the output file to save the plot. If not provided, the plot will
+not be stored}
 
-\item{genes.subset}{list of selected predictors for each condition}
+\item{title}{string, title of the plot}
 
-\item{B}{number of bootstrap resamples. Defaults to 20}
+\item{ylab}{string, y-axis title}
 
-\item{sample.prob}{list of numeric vectors as weights when applying
-\link[base]{sample}}
-
-\item{k}{number of kfolds to execute in the GLMNET algorithm
-(\link[glmnet]{cv.glmnet}). Defaults to 10}
-
-\item{do.boxplot}{boolean to do a boxplot or a barplot. Defaults to False}
+\item{legend.title}{string, title of the legend}
 }
 \value{
-ggplot2 object
+ggplot object containing the RMSE comparison of the two groups
 }
 \description{
-The inputs can be either a list object generated from previous SuCoNets
-functions or individual condition variables.
+For the given grouped results (see \link[CovCoExpNets]{groupMetrics}),
+it plots the RMSE for the conditions and its 95\% confidence
+interval.
 }
