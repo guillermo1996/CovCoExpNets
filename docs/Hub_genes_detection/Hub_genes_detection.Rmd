@@ -59,7 +59,7 @@ cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
 genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 ```
 
-The minimum requirements to execute the pipeline are the dataset and the covariate vector, the *t* hyperparameter (by default 10) and the *mrfa* hyperparameter (by defualt 0.9). The output is a list of the hub genes:
+The minimum requirements to execute the pipeline are the dataset and the covariate vector, the *t* hyperparameter (by default 10) and the *mrfa* hyperparameter (by default 0.9). The output is a list of the hub genes:
 
 ```{r}
 # First 25 relevant genes for Cortex tissue:
@@ -84,9 +84,9 @@ head(genes.freq, 5)
 tail(genes.freq, 5)
 ```
 
-### Step 2: Minimum relative ratio of appearance treshold
+### Step 2: Minimum relative ratio of appearance threshold
 
-In this step, we reduce the list of predictors returned in each iteration. To do so, we use the hyperparameter *mrfa* to specify the minimum relative frequency in which a predictor must appear. To do so, we use the function `reduceGenes` from `CovCoExpNets`, where we count how many times each gene is selected as relevant across the `glmnet` repetitions and divide it by the total number of repetitions so that we have the percentage of repetitions in which it was selected as relevant. We require a minimum appearance threhsold. 
+In this step, we reduce the list of predictors returned in each iteration. To do so, we use the hyperparameter *mrfa* to specify the minimum relative frequency in which a predictor must appear. To do so, we use the function `reduceGenes` from `CovCoExpNets`, where we count how many times each gene is selected as relevant across the `glmnet` repetitions and divide it by the total number of repetitions so that we have the percentage of repetitions in which it was selected as relevant. We require a minimum appearance threshold. 
 
 By default, we recommend an *mrfa* of 0.9: 
 
@@ -132,11 +132,11 @@ The required functions to execute the pipeline are:
     * **t:** number of `glmnet` repetitions to execute. Its value depends on the stability of the `glmnet` repetitions. Deaults to 10.
     * **k.folds:** (optional) number of k-folds in the `glmnet` cross-validation function `cv.glmnet`. Defaults to 10.
     * **train.split:** (optional) percentage to split the training dataset for testing purposes. A value of 0.8 will set the 80% of the samples to train and 20% to estimate the test RMSE. Defaults to 1.
-    * **iter.RMSE:** (optional) whether to measure the RMSE of each reptition. Different solutions will not only have different returned predictors, but also different performance. Use this setting if you wish the prioritize better RMSE iterations when selecting the pruned predictors.
+    * **iter.RMSE:** (optional) whether to measure the RMSE of each repetition. Different solutions will not only have different returned predictors, but also different performance. Use this setting to prioritize better RMSE iterations when selecting the pruned predictors.
     * **data.test.extra:** (optional) numeric data matrix with genes as rows and samples as columns. If the train/test split was executed before this step and you want to estimate the RMSE over the test dataset, provide the test dataset in here. By default, none.
-    * **covariate.test.extra:** (optional) numeric vector with the age of the sample's donors. If the train/test split was executed before this step and you want to estimate the RMSE over the test dataset, provide the test dataset in here. By defualt, none.
+    * **covariate.test.extra:** (optional) numeric vector with the age of the sample's donors. If the train/test split was executed before this step and you want to estimate the RMSE over the test dataset, provide the test dataset in here. By default, none.
     * **sample.prob:** (optional) when executing the train/test split, it dictates the probability of each sample being executed. See [sample](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sample) for more information.
-    * **seed:** (optional) numeric seed to ensure reproducibility. Because of parallelization, even with an input seed results migh differ.
+    * **seed:** (optional) numeric seed to ensure reproducibility. Because of parallelization, even with an input seed results might differ.
     * **glmnet.family:** (optional) family parameter used in the `cv.glmnet` function. See [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet) for more details about the `family` parameter.
 
 * **reduceGenes:** executes the minimum relative frequency of appearance (*mrfa*) threshold. It has the following arguments:
@@ -154,7 +154,7 @@ The required functions to execute the pipeline are:
     * **k.folds:** (optional) number of k-folds in the `glmnet` cross-validation function `cv.glmnet`. Defaults to 10.
     * **train.split:** (optional) percentage to split the training dataset for testing purposes. A value of 0.8 will set the 80% of the samples to train and 20% to estimate the test RMSE. Defaults to 1.
     * **sample.prob:** (optional) when executing the train/test split, it dictates the probability of each sample being executed. See [sample](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sample) for more information.
-    * **seed:** (optional) numeric seed to ensure reproducibility. Because of parallelization, even with an input seed results migh differ.
+    * **seed:** (optional) numeric seed to ensure reproducibility. Because of parallelization, even with an input seed results might differ.
     * **glmnet.family:** (optional) family parameter used in the `cv.glmnet` function. See [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet) for more details about the `family` parameter.
     * **return.genes.subset:** (optional) whether to return the hub genes along with the `glmnet` model. Recommended to FALSE and use `extractModelGenes` from `CovCoExpNets` over the model later on. Defaults to FALSE.
 

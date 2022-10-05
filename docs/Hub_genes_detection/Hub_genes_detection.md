@@ -6,7 +6,7 @@ Hub Gene detection algorithm
   - [Summary](#summary)
   - [Steps](#steps)
     - [Step 1: Executing the `glmnet` repetitions](#step-1-executing-the-glmnet-repetitions)
-    - [Step 2: Minimum relative ratio of appearance treshold](#step-2-minimum-relative-ratio-of-appearance-treshold)
+    - [Step 2: Minimum relative ratio of appearance threshold](#step-2-minimum-relative-ratio-of-appearance-threshold)
     - [Step 3: Model generation](#step-3-model-generation)
     - [Step 4: Genes and coefficients extraction](#step-4-genes-and-coefficients-extraction)
   - [Functions employed:](#functions-employed)
@@ -81,7 +81,7 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 The minimum requirements to execute the pipeline are the dataset and the
 covariate vector, the *t* hyperparameter (by default 10) and the *mrfa*
-hyperparameter (by defualt 0.9). The output is a list of the hub genes:
+hyperparameter (by default 0.9). The output is a list of the hub genes:
 
 ``` r
 # First 25 relevant genes for Cortex tissue:
@@ -114,21 +114,21 @@ selected by each iteration and their coefficients.
 ``` r
 head(genes.freq, 5)
 #>      Genes Coefficients iter
-#> 1    EDA2R    0.2160115    1
-#> 2    GPR26   -0.2121507    1
-#> 3   ZNF229   -0.1527472    1
-#> 4   ADRA2B   -0.1514803    1
-#> 5 BAIAP2L2    0.1183130    1
+#> 1    EDA2R    0.2515872    1
+#> 2   ADRA2B   -0.1733996    1
+#> 3 BAIAP2L2    0.1627851    1
+#> 4   ZNF229   -0.1612702    1
+#> 5    GPR26   -0.1422902    1
 tail(genes.freq, 5)
 #>       Genes  Coefficients iter
-#> 2288 PCDHB8  4.974914e-05   10
-#> 2289    LPA -9.606374e-06   10
-#> 2290   LSM6  7.456103e-06   10
-#> 2291  KYAT3 -1.796169e-06   10
-#> 2292  TNNT2  1.633166e-06   10
+#> 2470 PCDHB8  2.693804e-05   10
+#> 2471  RBM20  1.835620e-05   10
+#> 2472  ESRP2 -1.731988e-05   10
+#> 2473 CYBRD1 -2.641160e-06   10
+#> 2474  TNNT2  8.378742e-07   10
 ```
 
-### Step 2: Minimum relative ratio of appearance treshold
+### Step 2: Minimum relative ratio of appearance threshold
 
 In this step, we reduce the list of predictors returned in each
 iteration. To do so, we use the hyperparameter *mrfa* to specify the
@@ -137,7 +137,7 @@ we use the function `reduceGenes` from `CovCoExpNets`, where we count
 how many times each gene is selected as relevant across the `glmnet`
 repetitions and divide it by the total number of repetitions so that we
 have the percentage of repetitions in which it was selected as relevant.
-We require a minimum appearance threhsold.
+We require a minimum appearance threshold.
 
 By default, we recommend an *mrfa* of 0.9:
 
@@ -146,15 +146,15 @@ genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
 
 # First 25 genes:
 genes.subset[1:25]
-#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADRA2B"    "AHRR"      "ALDH3A1"  
-#>  [7] "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B"  "APC"       "ARHGAP11A"
-#> [13] "ASCL2"     "ATAD3C"    "BAIAP2L2"  "C12orf60"  "C1QL4"     "CARD16"   
-#> [19] "CBY3"      "CCDC163"   "CCDC170"   "CCDC81"    "CD163L1"   "CD3E"     
-#> [25] "CDK11A"
+#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADAMTS7"   "ADRA2B"    "AHRR"     
+#>  [7] "ALDH3A1"   "ALOX15"    "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B" 
+#> [13] "ANKRD33"   "APC"       "APOBEC3A"  "APOBEC3C"  "APOC1"     "ARHGAP11A"
+#> [19] "ARL17A"    "ASCL2"     "ASF1B"     "ATAD3C"    "BAIAP2L2"  "BMF"      
+#> [25] "C12orf54"
 ```
 
 The output will be a set of genes that pass the threshold. In total,
-there were 277 different genes across all repetitions, while 201 of
+there were 250 different genes across all repetitions, while 243 of
 those passed the threshold.
 
 ### Step 3: Model generation
@@ -171,9 +171,9 @@ cvfit
 #> 
 #> Measure: Mean-Squared Error 
 #> 
-#>        Lambda Index Measure       SE Nonzero
-#> min 0.0005074    74 0.03150 0.002368     195
-#> 1se 0.0008079    69 0.03368 0.002410     193
+#>       Lambda Index Measure       SE Nonzero
+#> min 0.003929    52  0.1054 0.006678     233
+#> 1se 0.004732    50  0.1088 0.007408     237
 ```
 
 ### Step 4: Genes and coefficients extraction
@@ -186,16 +186,16 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 head(genes.relevant, 10)
 #>       Genes Coefficients
-#> 1     EDA2R   0.27058261
-#> 2    ADRA2B  -0.17935231
-#> 3  BAIAP2L2   0.16943714
-#> 4    ZNF229  -0.16852248
-#> 5  C12orf60  -0.15005711
-#> 6     GPR26  -0.12395506
-#> 7     POC1A  -0.11090052
-#> 8     FATE1   0.10987335
-#> 9      HAP1   0.10321477
-#> 10   IQGAP3   0.09903114
+#> 1     EDA2R   0.25068156
+#> 2    ADRA2B  -0.17428570
+#> 3  BAIAP2L2   0.16337581
+#> 4    ZNF229  -0.16260479
+#> 5     GPR26  -0.13444292
+#> 6  C12orf60  -0.12991470
+#> 7      HAP1   0.10463062
+#> 8     POC1A  -0.10289414
+#> 9     FATE1   0.09825187
+#> 10   IQGAP3   0.09592335
 ```
 
 The list of hub genes is found in the “Genes” column of `genes.relevant`
@@ -223,10 +223,10 @@ The required functions to execute the pipeline are:
         the samples to train and 20% to estimate the test RMSE. Defaults
         to 1.
     -   **iter.RMSE:** (optional) whether to measure the RMSE of each
-        reptition. Different solutions will not only have different
+        repetition. Different solutions will not only have different
         returned predictors, but also different performance. Use this
-        setting if you wish the prioritize better RMSE iterations when
-        selecting the pruned predictors.
+        setting to prioritize better RMSE iterations when selecting the
+        pruned predictors.
     -   **data.test.extra:** (optional) numeric data matrix with genes
         as rows and samples as columns. If the train/test split was
         executed before this step and you want to estimate the RMSE over
@@ -235,14 +235,14 @@ The required functions to execute the pipeline are:
     -   **covariate.test.extra:** (optional) numeric vector with the age
         of the sample’s donors. If the train/test split was executed
         before this step and you want to estimate the RMSE over the test
-        dataset, provide the test dataset in here. By defualt, none.
+        dataset, provide the test dataset in here. By default, none.
     -   **sample.prob:** (optional) when executing the train/test split,
         it dictates the probability of each sample being executed. See
         [sample](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sample)
         for more information.
     -   **seed:** (optional) numeric seed to ensure reproducibility.
-        Because of parallelization, even with an input seed results migh
-        differ.
+        Because of parallelization, even with an input seed results
+        might differ.
     -   **glmnet.family:** (optional) family parameter used in the
         `cv.glmnet` function. See
         [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet)
@@ -286,8 +286,8 @@ The required functions to execute the pipeline are:
         [sample](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sample)
         for more information.
     -   **seed:** (optional) numeric seed to ensure reproducibility.
-        Because of parallelization, even with an input seed results migh
-        differ.
+        Because of parallelization, even with an input seed results
+        might differ.
     -   **glmnet.family:** (optional) family parameter used in the
         `cv.glmnet` function. See
         [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet)
