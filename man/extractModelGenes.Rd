@@ -4,10 +4,14 @@
 \alias{extractModelGenes}
 \title{Detect main genes}
 \usage{
-extractModelGenes(cvfit, genes.freq = NA)
+extractModelGenes(cvfit, genes.freq)
 }
 \arguments{
 \item{cvfit}{list of GMLNET object}
+
+\item{genes.freq}{data.frame obtained from \link[CovCoExpNets]{geneFrequency}.
+If provided, it will also return the average coefficient of each gene across
+all glmnet repetitions. Defaults to none.}
 }
 \value{
 list of dataframe containing the variables selected by the glmnet

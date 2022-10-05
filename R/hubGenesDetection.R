@@ -5,34 +5,37 @@
 #' previous SuCoNets functions or individual condition variables.
 #'
 #' @param cvfit list of GMLNET object
+#' @param genes.freq data.frame obtained from \link[CovCoExpNets]{geneFrequency}.
+#'   If provided, it will also return the average coefficient of each gene across
+#'   all glmnet repetitions. Defaults to none.
 #'
 #' @return list of dataframe containing the variables selected by the glmnet
 #'   algorithm and the coefficients associated with these variables. If only one
 #'   object was supplied, the output will be one object and not a list.
 #' @export
 #'
-extractModelGenes <- function(cvfit, genes.freq = NA){
+extractModelGenes <- function(cvfit, genes.freq){
   return.list = is(cvfit, "list")
   if(!return.list){
     cvfit = list(cvfit)
-    genes.freq = list(genes.freq)
   }
 
   given.genes.freq = !missing(genes.freq)
+  if(given.genes.freq & !return.list) genes.freq = list(genes.freq)
 
   extracted.genes.combined = foreach(i = 1:length(cvfit), .combine = "c") %dopar%{
     cvfit.i = cvfit[[i]]
 
     coefic = as.matrix(stats::coef(cvfit.i, s="lambda.min"))
     non.zero.rows = rownames(coefic)[which(coefic!=0)]
-    extracted.genes = data.frame(Genes = non.zero.rows[-1], Coeficientes = coefic[which(coefic!=0)][-1]) %>%
-      arrange(desc(abs(Coeficientes)))
+    extracted.genes = data.frame(Genes = non.zero.rows[-1], Coefficients = coefic[which(coefic!=0)][-1]) %>%
+      arrange(desc(abs(Coefficients)))
 
     if(given.genes.freq){
       genes.freq.i = genes.freq[[i]]
       genes.coefficients = genes.freq.i %>%
         group_by(Genes) %>%
-        summarise(Avg_Coefficients = mean(Coeficientes), Appearances = n())
+        summarise(Avg_Coefficients = mean(Coefficients), Appearances = n())
 
       extracted.genes = left_join(extracted.genes, genes.coefficients, by = "Genes") %>%
         arrange(desc(abs(Avg_Coefficients)))
@@ -84,42 +87,43 @@ geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1
     data = list(data)
     covariate = list(covariate)
     sample.prob = list(sample.prob)
+  }
+
+  given.test.extra = (!missing(data.test.extra) & !missing(covariate.test.extra))
+  if(given.test.extra){
     data.test.extra = list(data.test.extra)
     covariate.test.extra = list(covariate.test.extra)
   }
-
-  if(missing(data.test.extra)) data.test.extra = rep(list(NA), length(data))
-  if(missing(covariate.test.extra)) covariate.test.extra = rep(list(NA), length(data))
 
   genes.freq.combined = foreach(i = 1:length(data), .combine = "c") %do%{
     data.i = data[[i]]
     covariate.i = covariate[[i]]
     sample.prob.i = sample.prob[[i]]
 
-    data.test.i = data.test.extra[[i]]
-    covariate.test.i = covariate.test.extra[[i]]
+    set.seed(seed)
+    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
+
+    data.train = t(data.i[, ind.train])
+    covariate.train = covariate.i[ind.train]
 
     genes.freq = foreach(j = 1:t, .combine = "rbind") %dopar%{
-      set.seed(seed + j + i)
-      ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
-
-      data.train = t(data.i[, ind.train])
-      covariate.train = covariate.i[ind.train]
-
       cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
 
       if(iter.RMSE){
         data.test = t(data.i[, -ind.train])
         covariate.test = covariate.i[-ind.train]
-        if(!is.na(data.test.i[[1]]) & !is.na(covariate.test.i[[1]])){
+        if(given.test.extra){
+          data.test.i = data.test.extra[[i]]
+          covariate.test.i = covariate.test.extra[[i]]
+
           data.test = rbind(data.test, t(data.test.i))
           covariate.test = c(covariate.test, covariate.test.i)
         }
 
         predict.t = predict(cvfit.t, s = "lambda.min", newx = data.test)
-        bind_cols(extractModelGenes(cvfit.t), iter = j, RMSE = MLmetrics::RMSE(predict.t, covariate.test))
+        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j, RMSE = MLmetrics::RMSE(predict.t, covariate.test))
       }else{
-        bind_cols(extractModelGenes(cvfit.t), iter = j)
+        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j)
       }
     }
 
@@ -145,6 +149,9 @@ geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1
 #'   glmnet repetitions to be extracted (1 < mrfa < t)
 #' @param force.mrfa boolean, whether to force the mrfa to be the given value. If set
 #'   to TRUE, the algorithm will keep decreasing the mrfa if no genes are being extracted
+#' @param relative whether to use the relative mrfa. If TRUE, the parameter will be considered
+#'   as a percentage from 0 to 1. If FALSE, the parameter will be considered the plain number
+#'   of times the predictor must appear from 1 to t. By default, TRUE.
 #'
 #' @return list of vectors containing the genes selected for each condition. If
 #'   only one data matrix is provided, it will return the reduced matrix, not a
@@ -202,6 +209,9 @@ reduceGenes <- function(genes.freq, mrfa = 0.9, force.mrfa = T, relative = T){
 #' @param sample.prob list of numeric vectors as weights when applying
 #'   \link[base]{sample}
 #' @param seed fixed seed to generate split the dataset in train/test
+#' @param return.genes.subset  whether to return the hub genes along with
+#'   the glmnet model. Recommended to FALSE and use \link[CovCoExpNets]{extractModelGenes}
+#'   on the model later on. Defaults to FALSE.
 #'
 #' @return list of the generated glmnet object. If only one data matrix is
 #'   provided, it will return only one object, not a list.

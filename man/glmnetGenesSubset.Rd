@@ -32,6 +32,10 @@ glmnetGenesSubset(
 \link[base]{sample}}
 
 \item{seed}{fixed seed to generate split the dataset in train/test}
+
+\item{return.genes.subset}{whether to return the hub genes along with
+the glmnet model. Recommended to FALSE and use \link[CovCoExpNets]{extractModelGenes}
+on the model later on. Defaults to FALSE.}
 }
 \value{
 list of the generated glmnet object. If only one data matrix is

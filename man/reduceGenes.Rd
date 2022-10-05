@@ -16,6 +16,10 @@ glmnet repetitions to be extracted (1 < mrfa < t)}
 
 \item{force.mrfa}{boolean, whether to force the mrfa to be the given value. If set
 to TRUE, the algorithm will keep decreasing the mrfa if no genes are being extracted}
+
+\item{relative}{whether to use the relative mrfa. If TRUE, the parameter will be considered
+as a percentage from 0 to 1. If FALSE, the parameter will be considered the plain number
+of times the predictor must appear from 1 to t. By default, TRUE.}
 }
 \value{
 list of vectors containing the genes selected for each condition. If

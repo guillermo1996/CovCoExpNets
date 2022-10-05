@@ -104,7 +104,7 @@ rm(df.samples)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
 #> Ncells     659689   35.3    1258258    67.2    1221772    65.3
-#> Vcells 1089414078 8311.6 2660007744 20294.3 2214952982 16898.8
+#> Vcells 1089414082 8311.6 2660007749 20294.3 2214952986 16898.8
 
 # Construct a dummy matrix with samples as rows and tissues as columns.
 # If a sample is from a given tissue, it will have a 1 in the corresponding
@@ -125,7 +125,7 @@ rm(df.samples_data)
 gc() 
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
 #> Ncells    2215027  118.3    4340731   231.9    3370851   180.1
-#> Vcells 1092574990 8335.7 2660007744 20294.3 2214952982 16898.8
+#> Vcells 1092574994 8335.7 2660007749 20294.3 2214952986 16898.8
 ```
 
 In the end, we should have a `data` variable with a list containing the
@@ -177,7 +177,7 @@ rm(df.subjects)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
 #> Ncells    2215579  118.4    4340731   231.9    3370851   180.1
-#> Vcells 1092585225 8335.8 2660007744 20294.3 2214952982 16898.8
+#> Vcells 1092585229 8335.8 2660007749 20294.3 2214952986 16898.8
 ```
 
 At the end of this step, we should have two variables: `data` and `age`.
