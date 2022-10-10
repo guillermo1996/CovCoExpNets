@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis.R
 \name{groupMetrics}
 \alias{groupMetrics}
-\title{Summarize a metric across all repetitions}
+\title{Summarize a metric across all bootstrap repetitions}
 \usage{
 groupMetrics(
   df,
@@ -22,5 +22,5 @@ list by folds of data.train, data.test, covariate.train and covariate.test for
 every condition given.
 }
 \description{
-Summarize a metric across all repetitions
+Summarize a metric across all bootstrap repetitions
 }

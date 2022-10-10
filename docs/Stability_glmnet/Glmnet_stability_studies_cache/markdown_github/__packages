@@ -1,0 +1,10 @@
+Matrix
+glmnet
+foreach
+iterators
+doParallel
+CovCoExpNets
+magrittr
+dplyr
+jaccard
+ggplot2

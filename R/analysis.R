@@ -197,7 +197,7 @@ evaluateModelGLMNET <- function(data.train, covariate.train, data.test, covariat
 #evaluateModelGLMNET(data.train, covariate.train, data.test, covariate.test, m = m, d = d)
 
 
-#' Summarize a metric across all repetitions
+#' Summarize a metric across all bootstrap repetitions
 #'
 #'
 #' @param df numerical matrix (or list of numerical matrices) with predictors
@@ -230,6 +230,50 @@ groupMetrics <- function(df, metrics = c("rmse.test", "Returned.predictors", "r2
   return(df.group)
 }
 
+
+#' Calculate similarity between glmnet repetitions
+#'
+#' For a given \link[CovCoExpNets]{geneFrequency} object, it calculates
+#' the jaccard index between all glmnet repetitions as a measure of
+#' their similarity. Higher values represent more similar models and vice
+#' versa.
+#'
+#'
+#' @param genes.freq data.frame containing the GLMNET repetitions results.
+#'   Should be the output of \link[CovCoExpNets]{geneFrequency}.
+#' @param diag (optinal) which parameter to register in the diagional. Only
+#'   other possible value is "genes". By default, the jaccard index.
+#'
+#' @return matrix with the similarity for between all glmnet repetitions
+#' @export
+measureStabilityJaccard <- function(genes.freq, diag = "default"){
+  return.list = is(genes.freq, "list")
+  if(!return.list) genes.freq = list(genes.freq)
+
+  heat_map.combined = foreach(i = 1:length(genes.freq), .combine = "c") %dopar%{
+    genes.freq.i = genes.freq[[i]]
+    max.iter = max(genes.freq.i$iter)
+
+    heat_map = matrix(0, nrow = max.iter, ncol = max.iter)
+    foreach(j = 1:max.iter) %:% foreach(k = j:max.iter) %do%{
+      genes.j = CovCoExpNets::extractGenesIter(genes.freq.i, j)
+      genes.k = CovCoExpNets::extractGenesIter(genes.freq.i, k)
+
+      if(diag == "genes" & j == k){
+        heat_map[j, k] = length(genes.j)
+      }else{
+        heat_map[j, k] = CovCoExpNets::jaccardIndex(genes.j, genes.k)
+        heat_map[k, j] = heat_map[j, k]
+      }
+    };
+
+    heat_map = list(heat_map)
+    names(heat_map) = if(return.list) names(genes.freq)[i] else "Condition"
+    heat_map
+  }
+
+  return(CovCoExpNets::returnList(return.list, heat_map.combined))
+}
 
 # extractCondition <- function(genes.freq, diag = "default"){
 #   return.list = is(genes.freq, "list")
@@ -268,3 +312,5 @@ groupMetrics <- function(df, metrics = c("rmse.test", "Returned.predictors", "r2
 #
 #   return(returnList(return.list, heatmap.combined))
 # }
+
+

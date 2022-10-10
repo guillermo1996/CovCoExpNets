@@ -1,0 +1,214 @@
+-   [Covariate simulations](#covariate-simulations)
+    -   [Requisites](#requisites)
+    -   [Steps](#steps)
+    -   [Parameter testing](#parameter-testing)
+    -   [Bivariate simulations](#bivariate-simulations)
+
+Covariate simulations
+=====================
+
+In this tutorial, we will study how to employ the simulation framework
+adapted from
+[simglm](https://cran.r-project.org/web/packages/simglm/index.html) and
+how to execute the `CovCoExpNets` to test the results.
+
+Requisites
+----------
+
+The main library requirements for this tutorial are `CovCoExpNets`,
+`magrittr` for the pipe-like operator `%>%`, `dplyr`, `simglm` to
+generate the simulations and `caret` to evaluate the models. By default,
+the `CovCoExpNets` package also loads `foreach` and `doParallel` to
+execute the steps in parallel.
+
+``` r
+library(CovCoExpNets)
+#> Loading required package: glmnet
+#> Loading required package: Matrix
+#> Loaded glmnet 4.1-2
+#> Loading required package: foreach
+#> Loading required package: doParallel
+#> Loading required package: iterators
+#> Loading required package: parallel
+library(magrittr)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
+library(simglm)
+library(caret)
+#> Loading required package: ggplot2
+#> Loading required package: lattice
+
+doParallel::registerDoParallel(13)
+```
+
+Steps
+-----
+
+### Step 1: Simulation generation
+
+To execute a univariate simulation, we employ the `simulateUnivariate()`
+function from `CovCoExpNets`. The main parameters we need are the number
+of samples `N`, the total number of predictors `P` and how many of them
+will be relevant to the response variable `Q` (coefficients different
+from zero).
+
+``` r
+N = 200
+P = 1000
+Q = 200
+
+sim.obj = CovCoExpNets::simulateUnivariate(N, P, Q, seed = 1796)
+```
+
+The simulation object created is a list containing:
+
+-   **data:** the data.frame with the simulated dataset.
+-   **y:** the response variable.
+-   **df.coefficients:** a data.frame with two rows: the relevant
+    predictors and their coefficients.
+-   **predictor.splits:** a list of the relevant predictors.
+
+### Step 2: CovCoExpNets pipeline
+
+Once we have a simulated dataset, we can execute the CovCoExpNets
+pipeline:
+
+``` r
+x = sim.obj$data %>% as.matrix() %>% t()
+
+# We need to normalize the response variable and extract the covariate (eliminate the mean and standard deviation)
+y = sim.obj$y %>% normalize() %>% extract2("covariate")
+
+pred.freq = geneFrequency(x, y, seed = 1796)
+pred.subset = reduceGenes(pred.freq, mrfa = 0.9)
+cvfit = glmnetGenesSubset(x, y, pred.subset, seed = 1796)
+pred.relevant = extractModelGenes(cvfit)
+```
+
+The predictors selected as relevant by the model can be seen in
+`pred.relevant`. As we can see, there is no difference from an ordinary
+execution with biological data.
+
+### Step 3: Evaluation
+
+The most relevant metrics to evaluate are the *precision*, the
+*sensibility* and the *specificity*. To do so, we use the
+`calculateSimulationMetrics` function from `CovCoExpNets`:
+
+``` r
+sim.metrics = calculateSimulationMetrics(pred.relevant, sim.obj, "Q1")
+print(sim.metrics)
+#>            Precision Sensitivity Specificity Jaccard.index Returned.predictors
+#> Simulation 0.5833333        0.07      0.9875         0.024                  24
+print(paste0("Precisión: ", sim.metrics$Precision %>% round(2)))
+#> [1] "Precisión: 0.58"
+print(paste0("Sensitivity: ", sim.metrics$Sensitivity %>% round(2)))
+#> [1] "Sensitivity: 0.07"
+print(paste0("Specificity: ", sim.metrics$Specificity %>% round(2)))
+#> [1] "Specificity: 0.99"
+```
+
+Parameter testing
+-----------------
+
+To test and compare different simulation parameters, we must first
+generate a dataframe with all possible combinations:
+
+``` r
+N = c(200, 300)
+P = c(1000)
+Q = c(100, 500)
+
+hp.df = expand.grid(N = N, P = P, Q = Q) %>% filter(Q < P) 
+hp.df
+#>     N    P   Q
+#> 1 200 1000 100
+#> 2 300 1000 100
+#> 3 200 1000 500
+#> 4 300 1000 500
+```
+
+Then, we can loop through every row and calculate the simulation
+metrics:
+
+``` r
+set.seed(1796)
+sim.seeds <- foreach(i=1:nrow(hp.df), .combine="c") %do% {sample(1:999999999, 1)}
+
+hp.metrics = foreach(row = 1:nrow(hp.df), .combine = "rbind") %do%{
+  hp.row = hp.df[row, ]
+  sim.obj = CovCoExpNets::simulateUnivariate(hp.row$N, hp.row$P, hp.row$Q, seed = sim.seeds[i])
+  
+  x = sim.obj$data %>% as.matrix() %>% t()
+  y = sim.obj$y %>% normalize() %>% extract2("covariate")
+  
+  pred.freq = geneFrequency(x, y, seed = sim.seeds[i])
+  pred.subset = reduceGenes(pred.freq, mrfa = 0.9)
+  cvfit = glmnetGenesSubset(x, y, pred.subset, seed = sim.seeds[i])
+  pred.relevant = extractModelGenes(cvfit)
+  
+  sim.metrics = calculateSimulationMetrics(pred.relevant, sim.obj, "Q1") %>% 
+    dplyr::mutate(Simulation = row, N = hp.row$N, P = hp.row$P, Q = hp.row$Q, .before = "Precision")
+  sim.metrics
+}
+
+hp.metrics
+#>             Simulation   N    P   Q Precision Sensitivity Specificity
+#> Simulation           1 200 1000 100 0.3888889       0.490   0.9144444
+#> Simulation1          2 300 1000 100 0.2985612       0.830   0.7833333
+#> Simulation2          3 200 1000 500 0.6326531       0.062   0.9640000
+#> Simulation3          4 300 1000 500 0.7714286       0.054   0.9840000
+#>             Jaccard.index Returned.predictors
+#> Simulation          0.126                 126
+#> Simulation1         0.278                 278
+#> Simulation2         0.049                  49
+#> Simulation3         0.035                  35
+```
+
+To properly execute this experiment, it is recommended to repeat each
+simulation a set number of times and calculate the average and standard
+deviation of the different metrics. It is also possible to calculate the
+RMSE if the simulated dataset is split in training/testing.
+
+Bivariate simulations
+---------------------
+
+With the same simulation framework, it is possible to simulate two
+covarariates at the same time. The main parameters we need are the
+number of samples `N`, the total number of predictors `P` and how many
+of them will be relevant to the first response variable `Q1`, to the
+second response variables `Q2` and the number of common relevant
+predictors between the two.
+
+``` r
+N = 200
+P = 1000
+Q1 = 100
+Q2 = 75
+Qc = 25
+
+sim.obj = CovCoExpNets::simulateBivariate(N, P, Q1, Q2, Qc, distribution = "gaussian", params = list(mean = 1, sd = 1))
+
+names(sim.obj)
+#> [1] "data"              "y1"                "y2"               
+#> [4] "df.coefficients.1" "df.coefficients.2" "predictor.splits"
+```
+
+In the returned object, we will find:
+
+-   **data:** the data.frame with the simulated dataset.
+-   **y1:** the first response variable.
+-   **y2:** the second response variable.
+-   **df.coefficients.1:** a data.frame with two rows: the relevant
+    predictors and their coefficients for the first response variable.
+-   **df.coefficients.1:** a data.frame with two rows: the relevant
+    predictors and their coefficients for the second response variable.
+-   **predictor.splits:** a list of the relevant predictors for each
+    response variable and the common relevant predictors.

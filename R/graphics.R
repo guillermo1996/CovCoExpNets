@@ -5,7 +5,7 @@
 #' interval.
 #'
 #' @param df.group data.frame obtained from the function \link[CovCoExpNets]{groupMetrics}
-#' @param output_file path the output file to save the plot. If not provided, the plot will
+#' @param output.file path the output file to save the plot. If not provided, the plot will
 #'   not be stored
 #' @param title string, title of the plot
 #' @param ylab string, y-axis title
@@ -13,9 +13,9 @@
 #'
 #' @return ggplot object containing the RMSE comparison of the two groups
 #' @export
-plotRMSE <- function(df.group, output_file = NA, title= "", ylab = "", legend.title = "Algorithm", first.arg = "GLMNET", second.arg = "CovCoExpNets"){
+plotRMSE <- function(df.group, output.file = NA, title= "", ylab = "", legend.title = "Algorithm", first.arg = "GLMNET", second.arg = "CovCoExpNets"){
+  require(ggplot2)
   #df.rmse.combined = rbind(cbind(df.group.A, Group = first.arg), cbind(df.group.B, Group = second.arg))
-
   plot = ggplot(df.group, aes(x = reorder(Condition, rmse.test.mean), y = rmse.test.mean)) +
     geom_bar(stat = "identity", position = "dodge", color = "black", show.legend = T, fill = "steelblue") +
     geom_errorbar(aes(ymin = rmse.test.mean - rmse.test.ci, ymax = rmse.test.mean + rmse.test.ci, y = rmse.test.mean, col = "95% C.I."),
@@ -40,8 +40,8 @@ plotRMSE <- function(df.group, output_file = NA, title= "", ylab = "", legend.ti
           legend.text = element_text(size=15)
     )
 
-  if(!is.na(output_file)){
-    ggsave(output_file, plot, width = 16, height = 9, dpi = 300, units = "in")
+  if(!is.na(output.file)){
+    ggsave(output.file, plot, width = 16, height = 9, dpi = 300, units = "in")
   }
   plot
 }
@@ -66,6 +66,7 @@ plotRMSE <- function(df.group, output_file = NA, title= "", ylab = "", legend.ti
 #' @return ggplot object containing the RMSE comparison of the two groups
 #' @export
 plotComparisonRMSE <- function(df.group.A, df.group.B, output.file = NA, title= "", ylab = "", legend.title = "Algorithm", first.arg = "GLMNET", second.arg = "CovCoExpNets"){
+  require(ggplot2)
   df.rmse.combined = rbind(cbind(df.group.A, Group = first.arg), cbind(df.group.B, Group = second.arg))
 
   plot = ggplot(df.rmse.combined, aes(x = reorder(Condition, rmse.test.mean), y = rmse.test.mean, fill = Group)) +
@@ -117,6 +118,7 @@ plotComparisonRMSE <- function(df.group.A, df.group.B, output.file = NA, title= 
 #' @return ggplot object containing the adjusted R2 comparison of the two groups
 #' @export
 plotComparisonR2_adj <- function(df.group.A, df.group.B, output.file = NA, title= "", ylab = "", legend.title = "Algorithm", first_arg = "GLMNET", second_arg = "CovCoExpNets"){
+  require(ggplot2)
   df.rmse.combined = rbind(cbind(df.group.A, Group = first_arg), cbind(df.group.B, Group = second_arg))
 
   #df.rmse.combined =  rbind(cbind(df.group.glmnet, Group = "GLMNET"), cbind(df.group.covco, Group = "CovCoExpNets"))
@@ -176,6 +178,7 @@ plotComparisonR2_adj <- function(df.group.A, df.group.B, output.file = NA, title
 #' @return ggplot object containing the returned predictors comparison of the two groups
 #' @export
 plotComparisonReturnedPredictors <- function(df.group.A, df.group.B, output.file = NA, title= "", ylab = "", legend.title = "Algorithm", first_arg = "GLMNET", second_arg = "CovCoExpNets"){
+  require(ggplot2)
   df.rmse.combined = rbind(cbind(df.group.A, Group = first_arg), cbind(df.group.B, Group = second_arg))
 
   #df.rmse.combined =  rbind(cbind(df.group.glmnet, Group = "GLMNET"), cbind(df.group.covco, Group = "CovCoExpNets"))
@@ -218,6 +221,72 @@ plotComparisonReturnedPredictors <- function(df.group.A, df.group.B, output.file
 }
 
 
+#' ToDo
+#'
+#' ToDo
+#'
+#' @param genes.freq data.frame obtained from the function \link[CovCoExpNets]{groupMetrics}
+#' @param heatplots data.frame obtained from the function \link[CovCoExpNets]{groupMetrics}
+#' @param diag (optinal) which parameter to register in the diagional. Only
+#'   other possible value is "genes". By default, the jaccard index.
+#' @param show.text string, title of the plot
+#' @param output.path string, y-axis title
+#' @param draw.plot string, title of the legend
+#'
+#' @return ToDo
+#' @export
+plotAllSimilarity = function(genes.freq, heatplots, diag = "default", show.text = T, output.path = NA, draw.plot = T){
+  require(ggplot2)
+
+  if(missing(heatplots)) heatplots = measureStabilityJaccard(genes.freq, diag = diag)
+  return.list = is(genes.freq, "list")
+  if(!return.list){
+    genes.freq = list(genes.freq)
+    heatplots = list(heatplots)
+  }
+
+  r = foreach(i = 1:length(genes.freq), .combine = "c") %do%{
+    genes.freq.i = genes.freq[[i]]
+    max.iter = max(genes.freq.i$iter)
+    heatmap = heatplots[[i]]
+
+    df.heatmap = expand.grid(X = as.character(1:max.iter), Y = as.character(1:max.iter))
+    df.heatmap$text = c(heatmap)
+    df.heatmap$similarity = c(heatmap)
+
+    heatplot = ggplot(df.heatmap, aes(x = X, y = Y, fill = similarity)) +
+      geom_tile(color = "black", lwd = 0.25, linetype = 1) +
+      xlab("Repetition") + ylab("Repetition") +
+      scale_fill_gradientn(colors = hcl.colors(50, "RdYlGn")[1:47], name = paste0("Jaccard index\n"), limits = c(0, 1)) +
+      theme(aspect.ratio = 1) +
+      theme(plot.title = element_text(size = 22, face = "bold"),
+            panel.border = element_rect(colour = "black", fill = NA, size = 1),
+            axis.text.x = element_text(face = "bold", colour = "black", size = 15),
+            axis.text.y = element_text(face = "bold", colour = "black", size = 15),
+            axis.title.x = element_text(face = "bold", size = 20),
+            axis.title.y = element_text(face = "bold", size = 20, margin=margin(0,15,0,0)),
+            panel.grid.minor = element_line(color = "gray", size = 0.1, linetype = 2),
+            panel.grid.major = element_line(color = "gray", size = 0.2, linetype = 2),
+            panel.background = element_rect(fill = "#F5F5F5"),
+            legend.key.size = unit(0.5, 'cm'), #change legend key size
+            legend.key.height = unit(2, 'cm'), #change legend key height
+            legend.key.width = unit(1, 'cm'), #change legend key width
+            legend.title = element_text(size=15, face = "bold"), #change legend title font size
+            legend.text = element_text(size=12))
+    if(return.list) heatplot = heatplot + ggtitle(paste0("Tissue: ", names(genes.freq)[i]))
+    if(show.text) heatplot = heatplot + geom_text(aes(label = round(text, 2)), size = 6)
+
+    if(draw.plot) heatplot %>% print()
+
+    if(!is.na(output.path)){
+      output.file = if(return.list) paste0(output.path, gsub(" ", "_", names(genes.freq)[i]), ".png") else output.path
+      ggsave(output.file, heatplot, width = 10, height = 9, dpi = 300, units = "in")
+    }
+
+    heatplot
+  }
+}
+
 plotConditionCoincidences <- function(genes.relevant, title = "Titulo", diag = "default", output.file = NA){
   heatmap = matrix(0, nrow=length(genes.relevant), ncol=length(genes.relevant))
   r = foreach(i = 1:length(genes.relevant)) %:%
@@ -246,8 +315,6 @@ plotConditionCoincidences <- function(genes.relevant, title = "Titulo", diag = "
   plot.coin = plot.coin %>% filter(!is.na(text))
 
   library(pheatmap)
-
-
 
   plot.coincidences = ggplot(plot.coin, aes(x = X, y = Y, fill = color)) +
     geom_tile(color = "black", lwd = 0.3, linetype = 1) +

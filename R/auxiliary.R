@@ -211,3 +211,34 @@ extractGenesIter <- function(gene.freq, iteration){
     pull(Genes) %>%
     as.character()
 }
+
+
+#' Converts a list of predictors into a One Hot Encoding list
+#'
+#' @param all.names the total list of predictors.
+#' @param selected.names the predictors that are going to be encoded.
+#'
+#' @return named vector of 1s and 0s
+#' @export
+toOneHotEncoding = function(all.names, selected.names){
+  if(is(selected.names, "factor")) selected.names = as.character(selected.names)
+
+  one.hot = rep(0, length(all.names))
+  names(one.hot) = all.names
+  one.hot[selected.names] = 1
+  one.hot
+}
+
+
+#' Calculates the jaccard index of two sets
+#'
+#' @param a set of elements of the first vector.
+#' @param b set of elements of the second vector.
+#'
+#' @return jaccard index between the two sets.
+#' @export
+jaccardIndex <- function(a, b){
+  intersection = length(intersect(a, b))
+  union = length(a) + length(b) - intersection
+  return (intersection/union)
+}

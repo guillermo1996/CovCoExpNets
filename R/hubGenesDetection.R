@@ -79,6 +79,8 @@ extractModelGenes <- function(cvfit, genes.freq){
 #' @export
 #'
 #geneFrequency(data, age, data.test.extra = sapply(data, function(x) x[, 1:100]), covariate.test.extra = sapply(age, function(x) x[1:100]), train.split = 0.5, iter.RMSE = F)
+#data = x; covariate = y; t = 10; k.folds = 10; train.split = 1; iter.RMSE = F; data.test.extra = NA; covariate.test.extra = NA; sample.prob = c(); seed = sample(1:999999, 1); glmnet.family = "gaussian"; given.test.extra = F
+
 geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1,
                           iter.RMSE = F, data.test.extra, covariate.test.extra,
                           sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
@@ -107,6 +109,7 @@ geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1
     covariate.train = covariate.i[ind.train]
 
     genes.freq = foreach(j = 1:t, .combine = "rbind") %dopar%{
+      set.seed(seed + i + j)
       cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
 
       if(iter.RMSE){
@@ -216,6 +219,7 @@ reduceGenes <- function(genes.freq, mrfa = 0.9, force.mrfa = T, relative = T){
 #' @return list of the generated glmnet object. If only one data matrix is
 #'   provided, it will return only one object, not a list.
 #' @export
+#data = t(x); covariate = y; genes.subset = pred.subset; t = 10; k.folds = 10; train.split = 1; iter.RMSE = F; data.test.extra = NA; covariate.test.extra = NA; sample.prob = c(); seed = sample(1:999999, 1); glmnet.family = "gaussian"; given.test.extra = F
 glmnetGenesSubset <- function(data, covariate, genes.subset, k.folds = 10, train.split = 1.0, sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian", return.genes.subset = F){
   return.list = is(data, "list")
   if(!return.list){

@@ -6,7 +6,7 @@
 \usage{
 plotRMSE(
   df.group,
-  output_file = NA,
+  output.file = NA,
   title = "",
   ylab = "",
   legend.title = "Algorithm",
@@ -17,7 +17,7 @@ plotRMSE(
 \arguments{
 \item{df.group}{data.frame obtained from the function \link[CovCoExpNets]{groupMetrics}}
 
-\item{output_file}{path the output file to save the plot. If not provided, the plot will
+\item{output.file}{path the output file to save the plot. If not provided, the plot will
 not be stored}
 
 \item{title}{string, title of the plot}
