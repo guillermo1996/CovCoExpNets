@@ -1,9 +1,17 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Disclaimer
+# Work in progress
 
-This package is currently in development. For a more stable version, please visit [Carmen María Hernandez's version](https://github.com/carmen-maria-hernandez/SuCoNets).
+This package is currently in development. 
+
+Recommended tutorials:
+
+  * [Data preparation](docs/Data_preparation)
+  * [Hub genes detection](docs/Hub_genes_detection)
+
+<!---
+For a more stable version, please visit [Carmen María Hernandez's version](https://github.com/carmen-maria-hernandez/SuCoNets).
 
 ## Modifications
 
@@ -19,10 +27,6 @@ cvfit <- glmnetGenesSubset(data, age, genes.subset)
 From this point forwards, we can continue to run the `SuCoNets` pipeline.
 
 # SuCoNets
-
-<!-- badges: start -->
-
-<!-- badges: end -->
 
 Nowadays, the way to create a co-expression network is to use
 Hierarchical Clustering. This package allows you to create a
@@ -171,3 +175,5 @@ following URL:
 <https://cran.r-project.org/web/packages/glmnet/glmnet.pdf>. And it has
 been supervised by Juan A. Botía (Universidad de Murcia),
 <https://github.com/juanbot>, who has also contributed to its design.
+
+ -->
