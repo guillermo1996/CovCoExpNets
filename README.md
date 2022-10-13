@@ -10,6 +10,14 @@ Recommended tutorials:
   * [Data preparation](docs/Data_preparation)
   * [Hub genes detection](docs/Hub_genes_detection)
 
+## Installation
+
+To install the package run:
+
+```r
+devtools::install_github("guillermo1996/CovCoExpNets")
+```
+
 <!---
 For a more stable version, please visit [Carmen María Hernandez's version](https://github.com/carmen-maria-hernandez/SuCoNets).
 
