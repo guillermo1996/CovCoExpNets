@@ -1,17 +1,12 @@
+-   [Hub Gene detection algorithm](#hub-gene-detection-algorithm)
+    -   [Requisites](#requisites)
+    -   [Summary](#summary)
+    -   [Steps](#steps)
+    -   [Functions employed:](#functions-employed)
+    -   [Multiple conditions](#multiple-conditions)
+
 Hub Gene detection algorithm
 ============================
-
-- [Hub Gene detection algorithm](#hub-gene-detection-algorithm)
-  - [Requisites](#requisites)
-  - [Summary](#summary)
-  - [Steps](#steps)
-    - [Step 1: Executing the `glmnet` repetitions](#step-1-executing-the-glmnet-repetitions)
-    - [Step 2: Minimum relative ratio of appearance threshold](#step-2-minimum-relative-ratio-of-appearance-threshold)
-    - [Step 3: Model generation](#step-3-model-generation)
-    - [Step 4: Genes and coefficients extraction](#step-4-genes-and-coefficients-extraction)
-  - [Functions employed:](#functions-employed)
-  - [Multiple conditions](#multiple-conditions)
-
 
 In this tutorial, we will show the pipeline to extract the hub genes (or
 predictors) for a given covariate. These genes will be used to generate
@@ -21,12 +16,15 @@ Requisites
 ----------
 
 The libraries required for this tutorial are `CovCoExpNets`, `magrittr`
-for the `%>%` pipe-like operator and `dplyr`. Additionally,
+for the `%>%` pipe-like operator, `dplyr` and `logger`. Additionally,
 `CovCoExpNets` uses `foreach` and `doParallel` to execute the functions
 in parallel.
 
 ``` r
 library(CovCoExpNets)
+#> Loading required package: glmnet
+#> Loading required package: Matrix
+#> Loaded glmnet 4.1-2
 #> Loading required package: foreach
 #> Loading required package: doParallel
 #> Loading required package: iterators
@@ -41,6 +39,7 @@ library(dplyr)
 #> The following objects are masked from 'package:base':
 #> 
 #>     intersect, setdiff, setequal, union
+library(logger)
 doParallel::registerDoParallel(13)
 ```
 
@@ -114,18 +113,18 @@ selected by each iteration and their coefficients.
 ``` r
 head(genes.freq, 5)
 #>      Genes Coefficients iter
-#> 1    EDA2R    0.2515872    1
-#> 2   ADRA2B   -0.1733996    1
-#> 3 BAIAP2L2    0.1627851    1
-#> 4   ZNF229   -0.1612702    1
-#> 5    GPR26   -0.1422902    1
+#> 1    EDA2R    0.2404529    1
+#> 2    GPR26   -0.1660976    1
+#> 3   ZNF229   -0.1582700    1
+#> 4   ADRA2B   -0.1576799    1
+#> 5 BAIAP2L2    0.1458428    1
 tail(genes.freq, 5)
 #>       Genes  Coefficients iter
-#> 2470 PCDHB8  2.693804e-05   10
-#> 2471  RBM20  1.835620e-05   10
-#> 2472  ESRP2 -1.731988e-05   10
-#> 2473 CYBRD1 -2.641160e-06   10
-#> 2474  TNNT2  8.378742e-07   10
+#> 2354 PCDHB8  4.974914e-05   10
+#> 2355    LPA -9.606374e-06   10
+#> 2356   LSM6  7.456103e-06   10
+#> 2357  KYAT3 -1.796169e-06   10
+#> 2358  TNNT2  1.633166e-06   10
 ```
 
 ### Step 2: Minimum relative ratio of appearance threshold
@@ -146,15 +145,15 @@ genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
 
 # First 25 genes:
 genes.subset[1:25]
-#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADAMTS7"   "ADRA2B"    "AHRR"     
-#>  [7] "ALDH3A1"   "ALOX15"    "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B" 
-#> [13] "ANKRD33"   "APC"       "APOBEC3A"  "APOBEC3C"  "APOC1"     "ARHGAP11A"
-#> [19] "ARL17A"    "ASCL2"     "ASF1B"     "ATAD3C"    "BAIAP2L2"  "BMF"      
-#> [25] "C12orf54"
+#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADRA2B"    "AHRR"      "ALDH3A1"  
+#>  [7] "ALOX15"    "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B"  "ANKRD33"  
+#> [13] "APC"       "APOC1"     "ARHGAP11A" "ASCL2"     "ATAD3C"    "BAIAP2L2" 
+#> [19] "C12orf60"  "C1orf53"   "C1QL4"     "C1QTNF12"  "CACFD1"    "CAPN14"   
+#> [25] "CARD16"
 ```
 
 The output will be a set of genes that pass the threshold. In total,
-there were 250 different genes across all repetitions, while 243 of
+there were 269 different genes across all repetitions, while 191 of
 those passed the threshold.
 
 ### Step 3: Model generation
@@ -171,9 +170,9 @@ cvfit
 #> 
 #> Measure: Mean-Squared Error 
 #> 
-#>       Lambda Index Measure       SE Nonzero
-#> min 0.003929    52  0.1054 0.006678     233
-#> 1se 0.004732    50  0.1088 0.007408     237
+#>        Lambda Index Measure       SE Nonzero
+#> min 0.0005074    74 0.03315 0.003555     182
+#> 1se 0.0012865    64 0.03635 0.003583     180
 ```
 
 ### Step 4: Genes and coefficients extraction
@@ -186,16 +185,16 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 head(genes.relevant, 10)
 #>       Genes Coefficients
-#> 1     EDA2R   0.25068156
-#> 2    ADRA2B  -0.17428570
-#> 3  BAIAP2L2   0.16337581
-#> 4    ZNF229  -0.16260479
-#> 5     GPR26  -0.13444292
-#> 6  C12orf60  -0.12991470
-#> 7      HAP1   0.10463062
-#> 8     POC1A  -0.10289414
-#> 9     FATE1   0.09825187
-#> 10   IQGAP3   0.09592335
+#> 1     EDA2R   0.26777221
+#> 2    ADRA2B  -0.17828527
+#> 3    ZNF229  -0.17157346
+#> 4  BAIAP2L2   0.16618988
+#> 5  C12orf60  -0.14479918
+#> 6     GPR26  -0.12854039
+#> 7     POC1A  -0.11831739
+#> 8      HAP1   0.10563272
+#> 9     FATE1   0.10443456
+#> 10   IQGAP3   0.09883007
 ```
 
 The list of hub genes is found in the “Genes” column of `genes.relevant`

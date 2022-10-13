@@ -21,12 +21,13 @@ In this tutorial, we will show the pipeline to extract the hub genes (or predict
 
 ## Requisites
 
-The libraries required for this tutorial are `CovCoExpNets`, `magrittr` for the `%>%` pipe-like operator and `dplyr`. Additionally, `CovCoExpNets` uses `foreach` and `doParallel` to execute the functions in parallel.
+The libraries required for this tutorial are `CovCoExpNets`, `magrittr` for the `%>%` pipe-like operator, `dplyr` and `logger`. Additionally, `CovCoExpNets` uses `foreach` and `doParallel` to execute the functions in parallel.
 
 ```{r}
 library(CovCoExpNets)
 library(magrittr)
 library(dplyr)
+library(logger)
 doParallel::registerDoParallel(13)
 ```
 

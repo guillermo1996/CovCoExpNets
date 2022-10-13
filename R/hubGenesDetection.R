@@ -78,10 +78,85 @@ extractModelGenes <- function(cvfit, genes.freq){
 #'   list.
 #' @export
 #'
-#geneFrequency(data, age, data.test.extra = sapply(data, function(x) x[, 1:100]), covariate.test.extra = sapply(age, function(x) x[1:100]), train.split = 0.5, iter.RMSE = F)
-#data = x; covariate = y; t = 10; k.folds = 10; train.split = 1; iter.RMSE = F; data.test.extra = NA; covariate.test.extra = NA; sample.prob = c(); seed = sample(1:999999, 1); glmnet.family = "gaussian"; given.test.extra = F
+geneFrequency <- function(data,
+                          covariate,
+                          t = 10,
+                          k.folds = 10,
+                          train.split = 1,
+                          iter.RMSE = F,
+                          sample.prob = c(),
+                          seed = sample(1:999999, 1),
+                          glmnet.family = "gaussian"){
+  return.list = is(data, "list")
+  if(!return.list){
+    data = list(data)
+    covariate = list(covariate)
+    sample.prob = list(sample.prob)
+  }
 
-geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1,
+  genes.freq.combined = foreach(i = 1:length(data), .combine = "c") %do%{
+    data.i = data[[i]]
+    covariate.i = covariate[[i]]
+    sample.prob.i = sample.prob[[i]]
+
+    set.seed(seed)
+    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
+
+    data.train = t(data.i[, ind.train])
+    covariate.train = covariate.i[ind.train]
+
+    genes.freq = foreach(j = 1:t, .combine = "rbind") %dopar%{
+      set.seed(seed + i + j)
+      cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
+
+      if(iter.RMSE){
+        data.test = t(data.i[, -ind.train])
+        covariate.test = covariate.i[-ind.train]
+
+        predict.t = predict(cvfit.t, s = "lambda.min", newx = data.test)
+        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j, RMSE = MLmetrics::RMSE(predict.t, covariate.test))
+      }else{
+        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j)
+      }
+    }
+
+    genes.freq = list(genes.freq)
+    names(genes.freq) = if(return.list) names(data)[i] else "Condition"
+    genes.freq
+  }
+
+  return(returnList(return.list, genes.freq.combined))
+}
+
+#' GLMNET repetitions with RMSE (In development)
+#'
+#' Executes GLMNET a set number of times (t) and extracts the genes selected as
+#' relevant and its coefficient. The inputs can be either a list object
+#' generated from previous CovCoExpNets functions or individual condition variables.
+#'
+#' It can also measure the RMSE of each iteration if train.spli != 1 or if extra data
+#' was provided in data.test.extra and covariate.test.extra
+#'
+#' @param data list of numeric expression matrices
+#' @param covariate list of numeric vectors
+#' @param t number of times to repeat the train/test split. Defaults to 10
+#' @param k.folds number of kfolds to execute in the GLMNET algorithm
+#'   (\link[glmnet]{cv.glmnet}). Defaults to 10
+#' @param train.split numeric percentage of samples to take as train
+#' @param iter.RMSE boolean, whether to measure the RMSE of all iterations
+#' @param data.test.extra list of numeric expression matrices to calculate the RMSE
+#' @param covariate.test.extra list of numeric vectors to calculate the RMSE
+#' @param sample.prob list of numeric vectors as weights when applying
+#'   \link[base]{sample}
+#' @param seed fixed seed to generate split the dataset in train/test
+#' @param glmnet.family see \link[glmnet]{cv.glmnet} family parameter.
+#'
+#' @return list of vectors containing the genes selected for each condition. If
+#'   only one data matrix is provided, it will return the reduced matrix, not a
+#'   list.
+#' @export
+#'
+geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split = 1,
                           iter.RMSE = F, data.test.extra, covariate.test.extra,
                           sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
   return.list = is(data, "list")
