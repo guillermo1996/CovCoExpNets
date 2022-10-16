@@ -1,10 +1,17 @@
 -   [Hub Gene detection algorithm](#hub-gene-detection-algorithm)
     -   [Requisites](#requisites)
-    -   [Summary](#summary)
-    -   [Steps](#steps)
-    -   [Functions employed:](#functions-employed)
-    -   [Multiple conditions](#multiple-conditions)
-    -   [Predicting the sex](#predicting-the-sex)
+-   [Summary](#summary)
+-   [Steps](#steps)
+    -   [Step 1: Executing the `glmnet`
+        repetitions](#step-1-executing-the-glmnet-repetitions)
+    -   [Step 2: Minimum relative ratio of appearance
+        threshold](#step-2-minimum-relative-ratio-of-appearance-threshold)
+    -   [Step 3: Model generation](#step-3-model-generation)
+    -   [Step 4: Genes and coefficients
+        extraction](#step-4-genes-and-coefficients-extraction)
+-   [Functions employed:](#functions-employed)
+-   [Multiple conditions](#multiple-conditions)
+-   [Predicting the sex](#predicting-the-sex)
 
 Hub Gene detection algorithm
 ============================
@@ -71,7 +78,7 @@ d = d[["Cortex"]]
 ```
 
 Summary
--------
+=======
 
 The whole pipeline to obtain the hub genes is as follows:
 
@@ -97,9 +104,10 @@ genes.relevant$Genes[1:25]
 ```
 
 Steps
------
+=====
 
-### Step 1: Executing the `glmnet` repetitions
+Step 1: Executing the `glmnet` repetitions
+------------------------------------------
 
 The first step is to execute the `glmnet` repetitions a set number of
 times (`t`). To do so, we will use the `geneFrequency` function from
@@ -130,7 +138,8 @@ tail(genes.freq, 5)
 #> 2358  TNNT2  1.633166e-06   10
 ```
 
-### Step 2: Minimum relative ratio of appearance threshold
+Step 2: Minimum relative ratio of appearance threshold
+------------------------------------------------------
 
 In this step, we reduce the list of predictors returned in each
 iteration. To do so, we use the hyperparameter *mrfa* to specify the
@@ -159,7 +168,8 @@ The output will be a set of genes that pass the threshold. In total,
 there were 269 different genes across all repetitions, while 191 of
 those passed the threshold.
 
-### Step 3: Model generation
+Step 3: Model generation
+------------------------
 
 Next, we create the final `glmnet` model. We use the `glmnetGenesSubset`
 function from `CovCoExpNets`.
@@ -178,7 +188,8 @@ cvfit
 #> 1se 0.0012865    64 0.03635 0.003583     180
 ```
 
-### Step 4: Genes and coefficients extraction
+Step 4: Genes and coefficients extraction
+-----------------------------------------
 
 The final step is to extract the hub genes from the generated model. We
 use the `extractModelGenes` function from `glmnet`.
@@ -204,7 +215,7 @@ The list of hub genes is found in the “Genes” column of `genes.relevant`
 variables. The coefficients are also reported.
 
 Functions employed:
--------------------
+===================
 
 The required functions to execute the pipeline are:
 
@@ -309,7 +320,7 @@ The required functions to execute the pipeline are:
         gene across all glmnet repetitions. Defaults to none.
 
 Multiple conditions
--------------------
+===================
 
 As mentioned in the first section, we can input several covariates at
 the same time in the form of a list. The following pipeline will
@@ -355,7 +366,7 @@ lapply(genes.relevant, function(x) head(x, 5))
 ```
 
 Predicting the sex
-------------------
+==================
 
 The `CovCoExpNets` package is also functional for binary covariates,
 like the sex of the samples’ donors. Using the `glmnet.family` across
