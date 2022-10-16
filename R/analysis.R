@@ -63,10 +63,10 @@ evaluateModel <- function(cvfit, data.test, covariate.test, genes.subset, data.t
 
   if(missing(data.train)) data.train = rep(list(NA), length(cvfit))
   if(missing(covariate.train)) covariate.train = rep(list(NA), length(cvfit))
-  if(missing(m)) m = rep(list(0), length(cvfit))
-  if(missing(d)) d = rep(list(1), length(cvfit))
+  if(is.na(m[[1]])) m = rep(list(0), length(cvfit))
+  if(is.na(d[[1]])) d = rep(list(1), length(cvfit))
 
-  foreach(i = 1:length(cvfit), .combine = "rbind") %dopar%{
+  foreach(i = 1:length(cvfit), .combine = "rbind", .packages = c("glmnet", "dplyr")) %dopar%{
     cvfit.i = cvfit[[i]]
     data.test.i = data.test[[i]]
     covariate.test.i = covariate.test[[i]]
@@ -81,7 +81,7 @@ evaluateModel <- function(cvfit, data.test, covariate.test, genes.subset, data.t
     relevant.genes = extractModelGenes(cvfit.i)$Genes
 
     print(is.na(data.train.i[[1]]))
-    if(!is.na(data.train.i[[1]] & !is.na(covariate.train.i[[1]]))){
+    if(!is.na(data.train.i[[1]]) & !is.na(covariate.train.i[[1]])){
       predict.train = predict(cvfit.i, s = "lambda.min", newx = t(data.train.i[genes.subset.i, ]), type = "response")
       rmse.train = MLmetrics::RMSE(predict.train*d.i + m.i, covariate.train.i*d.i + m.i)
       r2.train = getR2(covariate.train.i, predict.train)
@@ -149,10 +149,10 @@ evaluateModelGLMNET <- function(data.train, covariate.train, data.test, covariat
     d = list(d)
   }
 
-  if(missing(m)) m = rep(list(0), length(data.train))
-  if(missing(d)) m = rep(list(1), length(data.train))
+  if(is.na(m[[1]])) m = rep(list(0), length(data.train))
+  if(is.na(d[[1]])) d = rep(list(1), length(data.train))
 
-  foreach(i = 1:length(data.train), .combine = "rbind") %dopar%{
+  foreach(i = 1:length(data.train), .combine = "rbind", .packages = c("glmnet", "dplyr")) %dopar%{
     data.train.i = data.train[[i]]
     covariate.train.i = covariate.train[[i]]
     data.test.i = data.test[[i]]
@@ -210,7 +210,7 @@ evaluateModelGLMNET <- function(data.train, covariate.train, data.test, covariat
 #' @export
 groupMetrics <- function(df, metrics = c("rmse.test", "Returned.predictors", "r2_adj.train")){
   df.group = data.frame(Condition = unique(df$Condition))
-  r = foreach(i = 1:length(metrics)) %do%{
+  r = foreach(i = 1:length(metrics), .packages = c("dplyr")) %do%{
     var.name = metrics[i]
 
     if(var.name %in% c("Returned.predictors")){
@@ -250,7 +250,7 @@ measureStabilityJaccard <- function(genes.freq, diag = "default"){
   return.list = is(genes.freq, "list")
   if(!return.list) genes.freq = list(genes.freq)
 
-  heat_map.combined = foreach(i = 1:length(genes.freq), .combine = "c") %dopar%{
+  heat_map.combined = foreach(i = 1:length(genes.freq), .combine = "c", .packages = c("CovCoExpNets", "jaccard", "dplyr", "foreach")) %dopar%{
     genes.freq.i = genes.freq[[i]]
     max.iter = max(genes.freq.i$iter)
 

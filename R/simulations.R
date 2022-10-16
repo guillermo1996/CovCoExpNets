@@ -1,4 +1,4 @@
-P = 10; Q1 = 0; Q2 = 2; Qc = 0; distribution = "uniform"; params = list(min = -2, max = 2, mean = 0, sd = 1); seed = sample(1:99999999, 1); share.coeffs = F
+#P = 10; Q1 = 0; Q2 = 2; Qc = 0; distribution = "uniform"; params = list(min = -2, max = 2, mean = 0, sd = 1); seed = sample(1:99999999, 1); share.coeffs = F
 #' Generate simulations coefficients
 #'
 #' Generate the coefficients for the different predictors generated in a simulation.

@@ -245,7 +245,7 @@ plotAllSimilarity = function(genes.freq, heatplots, diag = "default", show.text 
     heatplots = list(heatplots)
   }
 
-  r = foreach(i = 1:length(genes.freq), .combine = "c") %do%{
+  r = foreach(i = 1:length(genes.freq), .combine = "c", .packages = c("CovCoExpNets", "ggplot2", "dplyr")) %do%{
     genes.freq.i = genes.freq[[i]]
     max.iter = max(genes.freq.i$iter)
     heatmap = heatplots[[i]]

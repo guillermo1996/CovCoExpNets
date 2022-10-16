@@ -44,8 +44,11 @@ library(simglm)
 library(caret)
 #> Loading required package: ggplot2
 #> Loading required package: lattice
+library(logger)
 
-doParallel::registerDoParallel(13)
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 Steps

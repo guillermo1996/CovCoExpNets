@@ -10,8 +10,8 @@ Prerequisites
 -------------
 
 This tutorial requires for the libraries `magrittr` for its pipe-like
-operator, `dplyr`, `jaccard` and `ggplot2`. We also automatically load
-the `doParallel` and `foreach` libraries. `jaccard`
+operator, `dplyr`, `logger`, `jaccard` and `ggplot2`. We also
+automatically load the `doParallel` and `foreach` libraries.
 
 ``` r
 library(CovCoExpNets)
@@ -34,8 +34,11 @@ library(dplyr)
 #>     intersect, setdiff, setequal, union
 library(jaccard)
 library(ggplot2)
+library(logger)
 
-doParallel::registerDoParallel(13)
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 The file requirements are the data and age generated in the data
@@ -71,7 +74,7 @@ the values of the intersection as the jaccard index between the two
 repetitions. We use the `measureStabilityJaccard` function:
 
 ``` r
-glmnet.stability.matrix = measureStabilityJaccard(genes.freq.40)
+glmnet.stability.matrix = CovCoExpNets::measureStabilityJaccard(genes.freq.40)
 ```
 
 ### Step 3: Stability results
@@ -115,9 +118,6 @@ df.stability
 #> 11           Putamen (basal ganglia)     0.882 0.005
 #> 12        Spinal cord (cervical c-1)     0.723 0.009
 #> 13                  Substantia nigra     0.791 0.007
-#df.stability = df.stability %>% mutate(Samples = sapply(data, function(x) dim(x)[2]), Genes = sapply(data, function(x) dim(x)[1]))
-#cor.test(df.stability$stability, df.stability$Samples)
-#cor.test(df.stability$stability, df.stability$Genes)
 ```
 
 These results show the average jaccard index for every tissue. We can
@@ -165,3 +165,7 @@ plotAllSimilarity(genes.freq.10, diag = "genes", show.text = T)
 
 We can also use the `output.path` argument to save the figure into the
 given location.
+
+``` r
+stopCluster(cl)
+```

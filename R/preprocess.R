@@ -73,7 +73,7 @@ applyZScore <- function(data, by.columns = FALSE){
   data.combined = foreach(i = 1:length(data), .combine = "c") %dopar%{
     data.i = data[[i]]
     if(!by.columns) data.i = t(data.i)
-    preProc = caret:: preProcess(data.i, method = c("center", "scale"))
+    preProc = caret::preProcess(data.i, method = c("center", "scale"))
     data.i = stats::predict(preProc, data.i)
 
     if(!by.columns) data.i = t(data.i)

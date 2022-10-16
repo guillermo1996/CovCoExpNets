@@ -29,8 +29,11 @@ library(magrittr)
 library(dplyr)
 library(simglm)
 library(caret)
+library(logger)
 
-doParallel::registerDoParallel(13)
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 ## Steps

@@ -19,8 +19,7 @@ knitr::opts_chunk$set(
 
 ## Prerequisites
 
-This tutorial requires for the libraries `magrittr` for its pipe-like operator, `dplyr`, `jaccard` and `ggplot2`. We also automatically load the `doParallel` and `foreach` libraries.
-`jaccard`
+This tutorial requires for the libraries `magrittr` for its pipe-like operator, `dplyr`, `logger`, `jaccard` and `ggplot2`. We also automatically load the `doParallel` and `foreach` libraries.
 
 ```{r}
 library(CovCoExpNets)
@@ -28,8 +27,11 @@ library(magrittr)
 library(dplyr)
 library(jaccard)
 library(ggplot2)
+library(logger)
 
-doParallel::registerDoParallel(13)
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 The file requirements are the data and age generated in the data extraction pipeline.
@@ -60,7 +62,7 @@ genes.freq.40 = CovCoExpNets::geneFrequency(data, age, t = 40, seed = 1796)
 Then, we generate a matrix with the repetitions as rows and columns, and the values of the intersection as the jaccard index between the two repetitions. We use the `measureStabilityJaccard` function:
 
 ```{r cache = TRUE}
-glmnet.stability.matrix = measureStabilityJaccard(genes.freq.40)
+glmnet.stability.matrix = CovCoExpNets::measureStabilityJaccard(genes.freq.40)
 ```
 
 ### Step 3: Stability results
@@ -89,9 +91,6 @@ calculateAverageStability <- function(glmnet.stability.matrix, round.digits = 3)
 df.stability = calculateAverageStability(glmnet.stability.matrix, round.digits = 3)
 
 df.stability
-#df.stability = df.stability %>% mutate(Samples = sapply(data, function(x) dim(x)[2]), Genes = sapply(data, function(x) dim(x)[1]))
-#cor.test(df.stability$stability, df.stability$Samples)
-#cor.test(df.stability$stability, df.stability$Genes)
 ```
 
 These results show the average jaccard index for every tissue. We can plot these results in barplots and compare the different tissues:
@@ -129,3 +128,8 @@ plotAllSimilarity(genes.freq.10, diag = "genes", show.text = T)
 ```
 
 We can also use the `output.path` argument to save the figure into the given location.
+
+```{r}
+stopCluster(cl)
+```
+
