@@ -1,9 +1,15 @@
 -   [Data extraction from the GTEx
     portal](#data-extraction-from-the-gtex-portal)
     -   [Requirements](#requirements)
-    -   [Steps](#steps)
-    -   [Results](#results)
-    -   [Additional Notes](#additional-notes)
+-   [Steps](#steps)
+    -   [Step 1: Data download](#step-1-data-download)
+    -   [Step 2: Extract brain samples by
+        tissues](#step-2-extract-brain-samples-by-tissues)
+    -   [Step 3: Age & Sex extraction](#step-3-age-sex-extraction)
+    -   [Step 4: Preprocessing](#step-4-preprocessing)
+-   [Results](#results)
+-   [Additional Notes](#additional-notes)
+    -   [List of conditions](#list-of-conditions)
 
 Data extraction from the GTEx portal
 ====================================
@@ -39,9 +45,10 @@ tissues, but it is only required if you are interested in more than one
 tissue or condition.
 
 Steps
------
+=====
 
-### Step 1: Data download
+Step 1: Data download
+---------------------
 
 The first step is to download the required data files. All the data for
 this tutorial can be obtained from the [GTEx
@@ -81,7 +88,8 @@ download.file(sample_info, paste0(data.path, "sample_info.txt"))
 # It must be extracted in the same folder as the other files.
 ```
 
-### Step 2: Extract brain samples by tissues
+Step 2: Extract brain samples by tissues
+----------------------------------------
 
 The step to extract the brain data by tissues is a bit complex and can
 be split in different steps:
@@ -107,8 +115,8 @@ data <- as.matrix(data, rownames = df.samples$Name)
 rm(df.samples)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    1806909   96.5    3041411   162.5    3041411   162.5
-#> Vcells 1091354820 8326.4 2662336634 20312.1 2216893749 16913.6
+#> Ncells    1806926   96.6    3041455   162.5    3041455   162.5
+#> Vcells 1091354866 8326.4 2662336689 20312.1 2216893795 16913.6
 
 # Construct a dummy matrix with samples as rows and tissues as columns.
 # If a sample is from a given tissue, it will have a 1 in the corresponding
@@ -128,8 +136,8 @@ data <- CovCoExpNets::splitByCondition(data, df.bool_data)
 rm(df.samples_data)
 gc() 
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2324629  124.2    4675051   249.7    3041411   162.5
-#> Vcells 1092759958 8337.1 2662336634 20312.1 2216893749 16913.6
+#> Ncells    2324646  124.2    4675080   249.7    3041455   162.5
+#> Vcells 1092760004 8337.1 2662336689 20312.1 2216893795 16913.6
 ```
 
 In the end, we should have a `data` variable with a list containing the
@@ -137,7 +145,8 @@ data.frames for each tissue. Each element of the list corresponds to a
 specific tissue, and they all have as rows the genes (56200) and the
 samples’ ID as columns (from 139 to 255, depending on the tissue).
 
-### Step 3: Age & Sex extraction
+Step 3: Age & Sex extraction
+----------------------------
 
 The next step is to extract the age and sex of the samples’ donors for
 each tissue. To do so, we use the `generateCovariate` function defined
@@ -177,8 +186,8 @@ sex <- generateCovariate(data, df.subjects, "SEX")
 rm(df.subjects)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2325230  124.2    4675051   249.7    3041411   162.5
-#> Vcells 1092771649 8337.2 2662336634 20312.1 2216893749 16913.6
+#> Ncells    2325247  124.2    4675080   249.7    3041455   162.5
+#> Vcells 1092771695 8337.2 2662336689 20312.1 2216893795 16913.6
 ```
 
 At the end of this step, we should have three variables: `data`, `age`
@@ -192,7 +201,8 @@ age and sex of the subjects for that given tissue.
 > tutorial, we set the age of the subject as the middle of the range.
 > For example, if the range is 60-69, the age estimated is 65.
 
-### Step 4: Preprocessing
+Step 4: Preprocessing
+---------------------
 
 The last step is to preprocess the data. The whole preprocessing
 pipeline is the following:
@@ -250,7 +260,7 @@ saveRDS(sex, paste0(data.path, "sex.combined.rds"))
 ```
 
 Results
--------
+=======
 
 By the end of this tutorial, we would have generated the preprocessed
 data matrices and ages of the subjects for all brain tissues.
@@ -294,9 +304,10 @@ df
 ```
 
 Additional Notes
-----------------
+================
 
-### List of conditions
+List of conditions
+------------------
 
 All the CovCoExpNets functions are prepared to deal with either a unique
 condition or multiple.
@@ -311,3 +322,7 @@ the preprocessing for every different element of the list. If we were to
 provide one single data matrix instead, it will also identify that the
 variable is not a list and will execute the pipeline only for that
 specific nameless data matrix.
+
+``` r
+stopCluster(cl)
+```

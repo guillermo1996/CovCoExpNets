@@ -36,9 +36,9 @@ The package `data.table` is required to read the initial data files from the GTE
 
 Later on, we will also use the package `caret` to split the dataset by tissues, but it is only required if you are interested in more than one tissue or condition.
 
-## Steps
+# Steps
 
-### Step 1: Data download
+## Step 1: Data download
 
 The first step is to download the required data files. All the data for this tutorial can be obtained from the [GTEx Portal](https://www.gtexportal.org/home/datasets). Specifically, we need three different files:
 
@@ -63,7 +63,7 @@ download.file(sample_info, paste0(data.path, "sample_info.txt"))
 # It must be extracted in the same folder as the other files.
 ```
 
-### Step 2: Extract brain samples by tissues
+## Step 2: Extract brain samples by tissues
 
 The step to extract the brain data by tissues is a bit complex and can be split in different steps:
 
@@ -107,7 +107,7 @@ gc()
 
 In the end, we should have a `data` variable with a list containing the data.frames for each tissue. Each element of the list corresponds to a specific tissue, and they all have as rows the genes (56200) and the samples' ID as columns (from 139 to 255, depending on the tissue).
 
-### Step 3: Age & Sex extraction
+## Step 3: Age & Sex extraction
 
 The next step is to extract the age and sex of the samples' donors for each tissue. To do so, we use the `generateCovariate` function defined next. It looks for the column names of the data matrix (containing the samples' ID) and matches them to the donors' age and sex in the subject information file:
 
@@ -148,7 +148,7 @@ At the end of this step, we should have three variables: `data`, `age` and `sex`
 
 > :warning: **Note**: Public available data from the GTEx project only provides the age of the subjects in 10 years ranges. For this tutorial, we set the age of the subject as the middle of the range. For example, if the range is 60-69, the age estimated is 65.
 
-### Step 4: Preprocessing
+## Step 4: Preprocessing
 
 The last step is to preprocess the data. The whole preprocessing pipeline is the following:
 
@@ -187,7 +187,7 @@ saveRDS(sex, paste0(data.path, "sex.combined.rds"))
 ```
 
 
-## Results
+# Results
 
 By the end of this tutorial, we would have generated the preprocessed data matrices and ages of the subjects for all brain tissues. 
 
@@ -212,9 +212,9 @@ colnames(df) = c("Samples", "Genes", "Autosomal genes")
 df
 ```
 
-## Additional Notes
+# Additional Notes
 
-### List of conditions
+## List of conditions
 
 All the CovCoExpNets functions are prepared to deal with either a unique condition or multiple.
 

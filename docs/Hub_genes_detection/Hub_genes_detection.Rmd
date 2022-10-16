@@ -52,7 +52,7 @@ m = m[["Cortex"]]
 d = d[["Cortex"]]
 ```
 
-## Summary
+# Summary
 
 The whole pipeline to obtain the hub genes is as follows:
 
@@ -71,9 +71,9 @@ genes.relevant$Genes[1:25]
 ```
 
 
-## Steps
+# Steps
 
-### Step 1: Executing the `glmnet` repetitions
+## Step 1: Executing the `glmnet` repetitions
 
 The first step is to execute the `glmnet` repetitions a set number of times (`t`). To do so, we will use the `geneFrequency` function from `CovCoExpNets`.
 
@@ -88,7 +88,7 @@ head(genes.freq, 5)
 tail(genes.freq, 5)
 ```
 
-### Step 2: Minimum relative ratio of appearance threshold
+## Step 2: Minimum relative ratio of appearance threshold
 
 In this step, we reduce the list of predictors returned in each iteration. To do so, we use the hyperparameter *mrfa* to specify the minimum relative frequency in which a predictor must appear. To do so, we use the function `reduceGenes` from `CovCoExpNets`, where we count how many times each gene is selected as relevant across the `glmnet` repetitions and divide it by the total number of repetitions so that we have the percentage of repetitions in which it was selected as relevant. We require a minimum appearance threshold. 
 
@@ -103,7 +103,7 @@ genes.subset[1:25]
 
 The output will be a set of genes that pass the threshold. In total, there were `r length(unique(genes.freq$Genes))` different genes across all repetitions, while `r length(genes.subset)` of those passed the threshold.
 
-### Step 3: Model generation
+## Step 3: Model generation
 
 Next, we create the final `glmnet` model. We use the `glmnetGenesSubset` function from `CovCoExpNets`.
 
@@ -113,7 +113,7 @@ cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
 cvfit
 ```
 
-### Step 4: Genes and coefficients extraction
+## Step 4: Genes and coefficients extraction
 
 The final step is to extract the hub genes from the generated model. We use the `extractModelGenes` function from `glmnet`.
 
@@ -125,7 +125,7 @@ head(genes.relevant, 10)
 
 The list of hub genes is found in the "Genes" column of `genes.relevant` variables. The coefficients are also reported.
 
-## Functions employed:
+# Functions employed:
 
 The required functions to execute the pipeline are:
 
@@ -167,7 +167,7 @@ The required functions to execute the pipeline are:
     * **cvfit:** `glmnet` model to extract the relevant predictors and their coefficients from.
     * **genes.freq:** data.frame obtained from `geneFrequency`. If provided, it will also return the average coefficient of each gene across all glmnet repetitions. Defaults to none.
 
-## Multiple conditions
+# Multiple conditions
 
 As mentioned in the first section, we can input several covariates at the same time in the form of a list. The following pipeline will generate the hub genes for both Cerebellar Hemisphere and Cerebellum tissues.
 
@@ -194,7 +194,7 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 lapply(genes.relevant, function(x) head(x, 5))
 ```
 
-## Predicting the sex
+# Predicting the sex
 
 The `CovCoExpNets` package is also functional for binary covariates, like the sex of the samples' donors. Using the `glmnet.family` across the different functions, we can generate the most relevant genes to predict the sex. It is important to notice that we cannot use the same dataset as before, since they included sexual genes. To predict the age, we are interested only in autosomal genes.
 
