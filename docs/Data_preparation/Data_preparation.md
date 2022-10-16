@@ -1,16 +1,12 @@
+-   [Data extraction from the GTEx
+    portal](#data-extraction-from-the-gtex-portal)
+    -   [Requirements](#requirements)
+    -   [Steps](#steps)
+    -   [Results](#results)
+    -   [Additional Notes](#additional-notes)
+
 Data extraction from the GTEx portal
 ====================================
-
-- [Data extraction from the GTEx portal](#data-extraction-from-the-gtex-portal)
-  - [Requirements](#requirements)
-  - [Steps](#steps)
-    - [Step 1: Data download](#step-1-data-download)
-    - [Step 2: Extract brain samples by tissues](#step-2-extract-brain-samples-by-tissues)
-    - [Step 3: Age extraction](#step-3-age-extraction)
-    - [Step 4: Preprocessing](#step-4-preprocessing)
-  - [Results](#results)
-  - [Additional Notes](#additional-notes)
-    - [List of conditions](#list-of-conditions)
 
 Requirements
 ------------
@@ -21,20 +17,22 @@ The requirements for this tutorial are the following libraries:
 library(CovCoExpNets)
 library(data.table)
 library(magrittr)
+library(logger)
 
-doParallel::registerDoParallel(13)
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 The package `data.table` is required to read the initial data files from
 the GTEx, as well as for some data.frame manipulation later on. The
-package `magrittr` allows to use of the “pipe”-like operator `%>%`,
-which is employed across all tutorials and this package for its
-convenience. In addition, the `CovCoExpNets` package uses the package
-`doParallel` and `foreach` to execute as many steps in parallel as
-possible. Since we work with different brain tissues and they do not
-interact with each other, it is possible to parallelize most parts of
-this tutorial. However, we need to specify the number of cores
-available.
+package `magrittr` allows to use of the pipe-like operator `%>%`, which
+is employed across all tutorials and this package for its convenience.
+In addition, the `CovCoExpNets` package uses the package `doParallel`
+and `foreach` to execute as many steps in parallel as possible. Since we
+work with different brain tissues and they do not interact with each
+other, it is possible to parallelize most parts of this tutorial.
+However, we need to specify the number of cores available.
 
 Later on, we will also use the package `caret` to split the dataset by
 tissues, but it is only required if you are interested in more than one
@@ -90,7 +88,7 @@ be split in different steps:
 
 1.  Extract the data samples’ ID for the brain tissues.
 
-2.  Extract the tpm values for the samples extracted from the brain.
+2.  Extract the TPM values for the samples extracted from the brain.
 
 3.  Split the previous datasets by tissue using a dummy matrix.
 
@@ -109,8 +107,8 @@ data <- as.matrix(data, rownames = df.samples$Name)
 rm(df.samples)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells     658907   35.2    1256590    67.2    1219008    65.2
-#> Vcells 1089412586 8311.6 2660005954 20294.3 2214951490 16898.8
+#> Ncells    1806909   96.5    3041411   162.5    3041411   162.5
+#> Vcells 1091354820 8326.4 2662336634 20312.1 2216893749 16913.6
 
 # Construct a dummy matrix with samples as rows and tissues as columns.
 # If a sample is from a given tissue, it will have a 1 in the corresponding
@@ -130,8 +128,8 @@ data <- CovCoExpNets::splitByCondition(data, df.bool_data)
 rm(df.samples_data)
 gc() 
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2214363  118.3    4311717   230.3    3434463   183.5
-#> Vcells 1092573765 8335.7 2660005954 20294.3 2214951490 16898.8
+#> Ncells    2324629  124.2    4675051   249.7    3041411   162.5
+#> Vcells 1092759958 8337.1 2662336634 20312.1 2216893749 16913.6
 ```
 
 In the end, we should have a `data` variable with a list containing the
@@ -139,22 +137,20 @@ data.frames for each tissue. Each element of the list corresponds to a
 specific tissue, and they all have as rows the genes (56200) and the
 samples’ ID as columns (from 139 to 255, depending on the tissue).
 
-### Step 3: Age extraction
+### Step 3: Age & Sex extraction
 
-The next step is to extract the age of the samples’ donors for each
-tissue. To do so, we use the `generateAge` function defined next. It
-looks for the column names of the data matrix (containing the samples’
-ID) and matches them to the donors’ age in the subject information file:
+The next step is to extract the age and sex of the samples’ donors for
+each tissue. To do so, we use the `generateCovariate` function defined
+next. It looks for the column names of the data matrix (containing the
+samples’ ID) and matches them to the donors’ age and sex in the subject
+information file:
 
 ``` r
-generateAge <- function(data, df.subjects){
+generateCovariate <- function(data, df.subjects, covariate = "AGE"){
   return.list = is(data, "list")
-  if(!return.list){
-    data = list(data)
-    
-  }
+  if(!return.list) data <- list(data)
   
-  age.combined = foreach(i = 1:length(data), .combine = "c") %dopar%{
+  covariate.combined <- foreach(i = 1:length(data), .combine = "c") %dopar%{
     data.i = data[[i]]
     sample_donnors = c()
 
@@ -164,33 +160,32 @@ generateAge <- function(data, df.subjects){
       sample_donnors = c(sample_donnors, donnor_id)
     }
 
-    age.tissue = merge(sample_donnors, df.subjects, by.x="x", by.y="SUBJID")$AGE
-    if(is(age.tissue, "character")){
-      age.tissue = unname(sapply(age.tissue, function(x) as.numeric(substr(x, 0, 2)) + 5))
+    covariate.tissue = merge(sample_donnors, df.subjects, by.x="x", by.y="SUBJID")[, covariate]
+    if(is(covariate.tissue, "character") & covariate == "AGE"){
+      covariate.tissue = unname(sapply(covariate.tissue, function(x) as.numeric(substr(x, 0, 2)) + 5))
     }
-    age.tissue = list(age.tissue)
-    names(age.tissue) = if(return.list) names(data)[i] else "Condition"
-    age.tissue
+    CovCoExpNets::convertToNamedList(covariate.tissue, names(data), i, return.list)
   }
 
-  return(CovCoExpNets::returnList(return.list, age.combined))
+  CovCoExpNets::returnList(return.list, covariate.combined)
 }
 
 df.subjects <- fread(paste0(data.path, "subject_info.txt"))
-age <- generateAge(data, df.subjects)
+age <- generateCovariate(data, df.subjects, "AGE")
+sex <- generateCovariate(data, df.subjects, "SEX")
   
 rm(df.subjects)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2214915  118.3    4311717   230.3    3434463   183.5
-#> Vcells 1092584000 8335.8 2660005954 20294.3 2214951490 16898.8
+#> Ncells    2325230  124.2    4675051   249.7    3041411   162.5
+#> Vcells 1092771649 8337.2 2662336634 20312.1 2216893749 16913.6
 ```
 
-At the end of this step, we should have two variables: `data` and `age`.
-Each one is a list with an element for each tissue. The `data` variables
-consists in the tpm values of the samples for that given tissue, while
-the `age` variable contains the biological age of the subjects for that
-given tissue.
+At the end of this step, we should have three variables: `data`, `age`
+and `sex`. Each one is a list with an element for each tissue. The
+`data` variables consists in the TPM values of the samples for that
+given tissue, while the `age` and `sex` variables contain the biological
+age and sex of the subjects for that given tissue.
 
 > :warning: **Note**: Public available data from the GTEx project only
 > provides the age of the subjects in 10 years ranges. For this
@@ -209,19 +204,27 @@ pipeline is the following:
 3.  Eliminate the genes with a low variation.
 4.  Require the genes to be Protein Coding. Previous to this step, we
     modified the GTEx naming convention from the GTEx project to match
-    the ENSEMBL notation and we translate them into HGCN notation.
+    the ENSEMBL notation and we translate them into HGCN notation. In
+    this step, we can also force the genes to be from autosomal genes.
 5.  Z-Score normalization so that every gene follows a gaussian with
     mean 0 and standard deviation 1, so that every gene can be compared
     independent from the scale.
 
 All of these steps are executed in the `dataPreprocess` function
 included in `CovCoExpNets`, where every step can be individually
-activated or deactivated.
+activated or deactivated. We also have to generate a dataset contanining
+only non-sexual chromosomes’ genes. This is becasue when trying to
+predict the sex of the subject, a single gene from a sexual chromosome
+can almost perfectly identify it.
 
 ``` r
+if(!file.exists(paste0(data.path, "data.autosomes.combined.rds"))){
+  data.autosomes = CovCoExpNets::dataPreprocess(data, includeSexChromosomes = F)
+  saveRDS(data.autosomes, paste0(data.path, "data.autosomes.combined.rds"))
+}
+
 if(!file.exists(paste0(data.path, "data.combined.rds"))){
   data = CovCoExpNets::dataPreprocess(data)
-  
   saveRDS(data, paste0(data.path, "data.combined.rds"))
 }
 ```
@@ -234,7 +237,16 @@ the results
 
 ``` r
 age = CovCoExpNets::normalize(age)
-saveRDS(age, paste0(data.path, "age.combined.rds"))
+saveRDS(age, paste0(data.path, "age.combined_approx.rds"))
+```
+
+The sex vector does not need any normalization since it is only a binary
+variable. However, it is recommended to set it to 0 and 1, instead of 1
+and 2:
+
+``` r
+sex = sapply(sex, function(x) factor(x-1, levels = c(0, 1), labels=c("Male", "Female")))
+saveRDS(sex, paste0(data.path, "sex.combined.rds"))
 ```
 
 Results
@@ -245,35 +257,40 @@ data matrices and ages of the subjects for all brain tissues.
 
 ``` r
 data = readRDS(paste0(data.path, "data.combined.rds"))
+data.autosomes = readRDS(paste0(data.path, "data.autosomes.combined.rds"))
 age = readRDS(paste0(data.path, "age.combined.rds"))
+sex = readRDS(paste0(data.path, "sex.combined.rds"))
 
 # Number of tissues:
 length(data)
 #> [1] 13
 length(age)
 #> [1] 13
+length(sex)
+#> [1] 13
 
 # Size of the datasets
 tissue.samples = lapply(data, function(x) dim(x)[2])
 tissue.genes = lapply(data, function(x) dim(x)[1])
+tissue.genes.autosomes = lapply(data.autosomes, function(x) dim(x)[1])
 
-df = data.table::rbindlist(list(Samples = tissue.samples, Genes = tissue.genes)) %>% t %>% as.data.frame()
-colnames(df) = c("Samples", "Genes")
+df = data.table::rbindlist(list(Samples = tissue.samples, Genes = tissue.genes, Autosomal_genes = tissue.genes.autosomes)) %>% t %>% as.data.frame()
+colnames(df) = c("Samples", "Genes", "Autosomal genes")
 df
-#>                                   Samples Genes
-#> Amygdala                              152 15121
-#> Anterior cingulate cortex (BA24)      176 15282
-#> Caudate (basal ganglia)               246 15276
-#> Cerebellar Hemisphere                 215 15301
-#> Cerebellum                            241 15484
-#> Cortex                                255 15516
-#> Frontal Cortex (BA9)                  209 15442
-#> Hippocampus                           197 15161
-#> Hypothalamus                          202 15500
-#> Nucleus accumbens (basal ganglia)     246 15264
-#> Putamen (basal ganglia)               205 15015
-#> Spinal cord (cervical c-1)            159 15210
-#> Substantia nigra                      139 15086
+#>                                   Samples Genes Autosomal genes
+#> Amygdala                              152 15121           14565
+#> Anterior cingulate cortex (BA24)      176 15282           14723
+#> Caudate (basal ganglia)               246 15276           14714
+#> Cerebellar Hemisphere                 215 15301           14750
+#> Cerebellum                            241 15484           14924
+#> Cortex                                255 15516           14951
+#> Frontal Cortex (BA9)                  209 15442           14875
+#> Hippocampus                           197 15161           14607
+#> Hypothalamus                          202 15500           14927
+#> Nucleus accumbens (basal ganglia)     246 15264           14698
+#> Putamen (basal ganglia)               205 15015           14462
+#> Spinal cord (cervical c-1)            159 15210           14655
+#> Substantia nigra                      139 15086           14528
 ```
 
 Additional Notes

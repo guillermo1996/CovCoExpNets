@@ -4,7 +4,7 @@
 \alias{extractModelGenes}
 \title{Detect main genes}
 \usage{
-extractModelGenes(cvfit, genes.freq)
+extractModelGenes(cvfit, genes.freq = NULL)
 }
 \arguments{
 \item{cvfit}{list of GMLNET object}

@@ -14,16 +14,15 @@
 #'   object was supplied, the output will be one object and not a list.
 #' @export
 #'
-extractModelGenes <- function(cvfit, genes.freq){
+extractModelGenes <- function(cvfit, genes.freq = NULL){
   return.list = is(cvfit, "list")
   if(!return.list){
     cvfit = list(cvfit)
   }
 
-  given.genes.freq = !missing(genes.freq)
-  if(given.genes.freq & !return.list) genes.freq = list(genes.freq)
+  if(!is.null(genes.freq) & !return.list) genes.freq = list(genes.freq)
 
-  extracted.genes.combined = foreach(i = 1:length(cvfit), .combine = "c") %dopar%{
+  extracted.genes.combined = foreach(i = 1:length(cvfit), .combine = "c", .packages=c("dplyr", "CovCoExpNets")) %dopar%{
     cvfit.i = cvfit[[i]]
 
     coefic = as.matrix(stats::coef(cvfit.i, s="lambda.min"))
@@ -31,7 +30,7 @@ extractModelGenes <- function(cvfit, genes.freq){
     extracted.genes = data.frame(Genes = non.zero.rows[-1], Coefficients = coefic[which(coefic!=0)][-1]) %>%
       arrange(desc(abs(Coefficients)))
 
-    if(given.genes.freq){
+    if(!is.null(genes.freq)){
       genes.freq.i = genes.freq[[i]]
       genes.coefficients = genes.freq.i %>%
         group_by(Genes) %>%
@@ -56,8 +55,8 @@ extractModelGenes <- function(cvfit, genes.freq){
 #' relevant and its coefficient. The inputs can be either a list object
 #' generated from previous CovCoExpNets functions or individual condition variables.
 #'
-#' It can also measure the RMSE of each iteration if train.spli != 1 or if extra data
-#' was provided in data.test.extra and covariate.test.extra
+#' To measure the RMSE per iteration, please refer to the \link[CovCoExpNets]{geneFrequencyRMSE}
+#' function.
 #'
 #' @param data list of numeric expression matrices
 #' @param covariate list of numeric vectors
@@ -65,9 +64,6 @@ extractModelGenes <- function(cvfit, genes.freq){
 #' @param k.folds number of kfolds to execute in the GLMNET algorithm
 #'   (\link[glmnet]{cv.glmnet}). Defaults to 10
 #' @param train.split numeric percentage of samples to take as train
-#' @param iter.RMSE boolean, whether to measure the RMSE of all iterations
-#' @param data.test.extra list of numeric expression matrices to calculate the RMSE
-#' @param covariate.test.extra list of numeric vectors to calculate the RMSE
 #' @param sample.prob list of numeric vectors as weights when applying
 #'   \link[base]{sample}
 #' @param seed fixed seed to generate split the dataset in train/test
@@ -77,16 +73,7 @@ extractModelGenes <- function(cvfit, genes.freq){
 #'   only one data matrix is provided, it will return the reduced matrix, not a
 #'   list.
 #' @export
-#'
-geneFrequency <- function(data,
-                          covariate,
-                          t = 10,
-                          k.folds = 10,
-                          train.split = 1,
-                          iter.RMSE = F,
-                          sample.prob = c(),
-                          seed = sample(1:999999, 1),
-                          glmnet.family = "gaussian"){
+geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1, sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
   return.list = is(data, "list")
   if(!return.list){
     data = list(data)
@@ -94,7 +81,7 @@ geneFrequency <- function(data,
     sample.prob = list(sample.prob)
   }
 
-  genes.freq.combined = foreach(i = 1:length(data), .combine = "c") %do%{
+  genes.freq.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets")) %do%{
     data.i = data[[i]]
     covariate.i = covariate[[i]]
     sample.prob.i = sample.prob[[i]]
@@ -105,19 +92,10 @@ geneFrequency <- function(data,
     data.train = t(data.i[, ind.train])
     covariate.train = covariate.i[ind.train]
 
-    genes.freq = foreach(j = 1:t, .combine = "rbind") %dopar%{
+    genes.freq = foreach(j = 1:t, .combine = "rbind", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
       set.seed(seed + i + j)
       cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
-
-      if(iter.RMSE){
-        data.test = t(data.i[, -ind.train])
-        covariate.test = covariate.i[-ind.train]
-
-        predict.t = predict(cvfit.t, s = "lambda.min", newx = data.test)
-        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j, RMSE = MLmetrics::RMSE(predict.t, covariate.test))
-      }else{
-        dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j)
-      }
+      dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j)
     }
 
     genes.freq = list(genes.freq)
@@ -155,9 +133,8 @@ geneFrequency <- function(data,
 #'   only one data matrix is provided, it will return the reduced matrix, not a
 #'   list.
 #' @export
-#'
 geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split = 1,
-                          iter.RMSE = F, data.test.extra, covariate.test.extra,
+                          iter.RMSE = F, data.test.extra = NULL, covariate.test.extra = NULL,
                           sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
   return.list = is(data, "list")
   if(!return.list){
@@ -166,13 +143,12 @@ geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split
     sample.prob = list(sample.prob)
   }
 
-  given.test.extra = (!missing(data.test.extra) & !missing(covariate.test.extra))
-  if(given.test.extra){
+  if(!is.null(data.test.extra) & !is.null(covariate.test.extra)){
     data.test.extra = list(data.test.extra)
     covariate.test.extra = list(covariate.test.extra)
   }
 
-  genes.freq.combined = foreach(i = 1:length(data), .combine = "c") %do%{
+  genes.freq.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets")) %do%{
     data.i = data[[i]]
     covariate.i = covariate[[i]]
     sample.prob.i = sample.prob[[i]]
@@ -183,14 +159,14 @@ geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split
     data.train = t(data.i[, ind.train])
     covariate.train = covariate.i[ind.train]
 
-    genes.freq = foreach(j = 1:t, .combine = "rbind") %dopar%{
+    genes.freq = foreach(j = 1:t, .combine = "rbind", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
       set.seed(seed + i + j)
       cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
 
       if(iter.RMSE){
         data.test = t(data.i[, -ind.train])
         covariate.test = covariate.i[-ind.train]
-        if(given.test.extra){
+        if(!is.null(data.test.extra) & !is.null(covariate.test.extra)){
           data.test.i = data.test.extra[[i]]
           covariate.test.i = covariate.test.extra[[i]]
 
@@ -242,11 +218,12 @@ reduceGenes <- function(genes.freq, mrfa = 0.9, force.mrfa = T, relative = T){
   }
 
   if(mrfa == 1 & missing(relative)) logger::log_warn("Specified mrfa = 1 is ambiguous. Please specify with the parameter 'relative = TRUE' if you are in the range 0 <= mrfa <= 1, or 'relative = FALSE' if 1 <= mrfa <= t. Defaults to TRUE")
+  if(mrfa < 1 & !relative) stop("The mrfa value provided is less than 1 and the relative flag is set to TRUE. That combination is not compatible.")
 
   min.mrfa = if(mrfa <= 1 & relative) 0 else 1
   red.interval = if(mrfa <= 1 & relative) -0.1 else -1
 
-  genes.subset.combined <- foreach(i = 1:length(genes.freq), .combine = "c") %dopar%{
+  genes.subset.combined <- foreach(i = 1:length(genes.freq), .combine = "c", .packages=c("dplyr", "CovCoExpNets")) %dopar%{
     genes.freq.i = genes.freq[[i]]
     max.iter = if(mrfa <= 1 & relative) max(genes.freq.i$iter) else 1
 
@@ -304,7 +281,7 @@ glmnetGenesSubset <- function(data, covariate, genes.subset, k.folds = 10, train
     sample.prob = list(sample.prob)
   }
 
-  cvfit.combined = foreach(i = 1:length(data), .combine = "c") %dopar%{
+  cvfit.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
     data.i = data[[i]]
     covariate.i = covariate[[i]]
     genes.subset.i = genes.subset[[i]]

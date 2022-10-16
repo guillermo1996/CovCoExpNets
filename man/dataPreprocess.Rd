@@ -18,6 +18,7 @@ dataPreprocess(
   freqCut = 20,
   uniqueCut = 5,
   sigDigits = 1,
+  includeSexChromosomes = T,
   by.columns = F,
   cutoff = 0.9
 )

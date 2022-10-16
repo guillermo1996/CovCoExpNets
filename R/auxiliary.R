@@ -242,3 +242,24 @@ jaccardIndex <- function(a, b){
   union = length(a) + length(b) - intersection
   return (intersection/union)
 }
+
+
+#' Transforms a variable into a named list object
+#'
+#' Usually employed to generate the return list by the \link[foreach]{foreach}
+#' loops.
+#'
+#' @param data.return data generated inside the loop.
+#' @param names.reference names of the data from which the data.return variable was generated.
+#' @param iter iteration of the loop.
+#' @param return.list whether the input of the main function was a list or not.
+#'
+#' @return named list containing the generated variable.
+#' @export
+convertToNamedList <- function(data.return, names.reference, iter, return.list){
+  data.return = list(data.return)
+  names(data.return) = if(return.list) names.reference[iter] else "Condition"
+  data.return
+}
+
+

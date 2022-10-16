@@ -4,6 +4,7 @@
     -   [Steps](#steps)
     -   [Functions employed:](#functions-employed)
     -   [Multiple conditions](#multiple-conditions)
+    -   [Predicting the sex](#predicting-the-sex)
 
 Hub Gene detection algorithm
 ============================
@@ -40,7 +41,10 @@ library(dplyr)
 #> 
 #>     intersect, setdiff, setequal, union
 library(logger)
-doParallel::registerDoParallel(13)
+
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 As for the input data, we will use the preprocessed data obtained from
@@ -73,7 +77,7 @@ The whole pipeline to obtain the hub genes is as follows:
 
 ``` r
 genes.freq = CovCoExpNets::geneFrequency(data, age, t = 10, seed = 1796)
-genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
 cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
 genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 ```
@@ -85,12 +89,11 @@ hyperparameter (by default 0.9). The output is a list of the hub genes:
 ``` r
 # First 25 relevant genes for Cortex tissue:
 genes.relevant$Genes[1:25]
-#>  [1] EDA2R      ADRA2B     BAIAP2L2   ZNF229     C12orf60   GPR26     
-#>  [7] POC1A      IQGAP3     HAP1       FATE1      MCF2L2     IGF1      
-#> [13] TLX2       ST6GALNAC2 ABCB4      LBHD1      ETV4       SCUBE1    
-#> [19] SOX7       SYT6       QPRT       ZP3        ZKSCAN8P1  SFTPA2    
-#> [25] RPSA      
-#> 204 Levels: AARD ABCB4 ADAD2 ADAMTS7 ADRA2B AHRR ALDH3A1 ALOX15 ALOX15B ... ZP3
+#>  [1] EDA2R     ADRA2B    ZNF229    BAIAP2L2  C12orf60  GPR26     POC1A    
+#>  [8] HAP1      FATE1     IQGAP3    MCF2L2    IGF1      PARPBP    KISS1R   
+#> [15] LBHD1     SYT6      ABCB4     ETV4      QPRT      SOX7      ADAD2    
+#> [22] TLX2      TFCP2L1   ZKSCAN8P1 SCUBE1   
+#> 182 Levels: AARD ABCB4 ADAD2 ADRA2B AHRR ALDH3A1 ALOX15 ALOX15B ALPL ... ZP3
 ```
 
 Steps
@@ -334,19 +337,63 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 ``` r
 lapply(genes.relevant, function(x) head(x, 5))
-#> $`Cerebellar Hemisphere`
+#> [[1]]
 #>     Genes Coefficients
-#> 1 FAM126A   -0.2047052
-#> 2   SYT16    0.1718157
-#> 3  SLC9A2   -0.1713823
-#> 4   RGS19    0.1630940
-#> 5  PLAGL1   -0.1605985
+#> 1 FAM126A   -0.2092029
+#> 2  PLAGL1   -0.1728505
+#> 3  SLC9A2   -0.1713773
+#> 4   RGS19    0.1572788
+#> 5   SYT16    0.1494378
 #> 
-#> $Cerebellum
+#> [[2]]
 #>     Genes Coefficients
-#> 1    WWC2   -0.1579401
-#> 2   PTPN3   -0.1411976
-#> 3  PLAGL1   -0.1276331
-#> 4   WNT5B   -0.1257876
-#> 5 SLC12A1    0.1145380
+#> 1    WWC2   -0.1478869
+#> 2   PTPN3   -0.1418295
+#> 3  PLAGL1   -0.1243939
+#> 4 SLC12A1    0.1237764
+#> 5   WNT5B   -0.1225396
+```
+
+Predicting the sex
+------------------
+
+The `CovCoExpNets` package is also functional for binary covariates,
+like the sex of the samples’ donors. Using the `glmnet.family` across
+the different functions, we can generate the most relevant genes to
+predict the sex. It is important to notice that we cannot use the same
+dataset as before, since they included sexual genes. To predict the age,
+we are interested only in autosomal genes.
+
+``` r
+brain_data.path <- "~/GTEx_data/"
+
+data.autosomes = readRDS(paste0(brain_data.path, "data.autosomes.combined.rds"))
+sex = readRDS(paste0(brain_data.path, "sex.combined.rds"))
+
+data.autosomes = data.autosomes[["Cortex"]]
+sex = sex[["Cortex"]]
+```
+
+``` r
+genes.freq = CovCoExpNets::geneFrequency(data.autosomes, sex, t = 10, seed = 1796, glmnet.family = "binomial")
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
+cvfit = CovCoExpNets::glmnetGenesSubset(data.autosomes, sex, genes.subset, seed = 1796, glmnet.family = "binomial")
+genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
+
+head(genes.relevant, 10)
+#>         Genes Coefficients
+#> 1        TLX2     4.449681
+#> 2      SPESP1    -2.476102
+#> 3        HAAO     2.348379
+#> 4       ACOT4    -2.265550
+#> 5      SMIM24     1.909714
+#> 6       NLRP2     1.752245
+#> 7  CSGALNACT1     1.643682
+#> 8       ADAD2     1.606470
+#> 9        HPGD     1.566646
+#> 10      CHST9     1.331642
+```
+
+``` r
+stopCluster(cl)
 ```

@@ -204,13 +204,16 @@ correctGTExNames <- function(data){
 
 #' Remove non protein-coding genes
 #'
-#' Identifies and eliminates genes which are not protein coding.
+#' Identifies and eliminates genes which are not protein coding. It can also
+#' remove genes from sexual chromosomes.
 #'
 #' @param data numerical matrix with predictors as rows and samples as columns
+#' @param includeSexChromosomes whether to include genes from sexual chromosomes
+#'   or not. By default, true.
 #'
 #' @return reduced numerical matrix
 #' @export
-applyProteinCodingRequirement <- function(data){
+applyProteinCodingRequirement <- function(data, includeSexChromosomes = T){
   library(biomaRt)
 
   mart <- biomaRt::useMart(biomart="ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl")
@@ -224,13 +227,14 @@ applyProteinCodingRequirement <- function(data){
     condition.name = if(return.list) names(data)[i] else "condition"
     gene.list = rownames(data.i)
 
-    genesNames <- biomaRt::getBM(attributes=c("ensembl_gene_id","external_gene_name", "gene_biotype"),
+    genesNames <- biomaRt::getBM(attributes=c("ensembl_gene_id","external_gene_name", "gene_biotype", "chromosome_name"),
                                  filters="ensembl_gene_id",
                                  values=unique(gene.list),
                                  mart=mart,
                                  useCache=FALSE)
     genesNames <- genesNames[match(unique(gene.list), genesNames$ensembl_gene_id), ]
     genesNames <- genesNames[which(genesNames$gene_biotype %in% "protein_coding"), ]
+    if(!includeSexChromosomes) genesNames <- genesNames[which(genesNames$chromosome_name %in% seq(1, 23)), ]
     new.data = data.i[genesNames$ensembl_gene_id, ]
     rownames(new.data) = genesNames$external_gene_name
     if(!all(data.frame(ensemmbl_gene_id = rownames(data.i[genesNames$ensembl_gene_id, ]), external_gene_name = rownames(new.data)) == genesNames[, c("ensembl_gene_id", "external_gene_name")])){
@@ -251,6 +255,40 @@ applyProteinCodingRequirement <- function(data){
   }
 
   return(returnList(return.list, data.combined))
+}
+
+
+#' Remove sexual genes
+#'
+#' Identifies and eliminates genes located in the sexual and mithocondrial chromosomes.
+#'
+#' @param data numerical matrix with predictors as rows and samples as columns.
+#'
+#' @return reduced numerical matrix
+#' @export
+removeSexualGenes <- function(data){
+  return.list = is(data, "list")
+  if(!return.list) data = list(data)
+
+  mart <- biomaRt::useMart(biomart="ENSEMBL_MART_ENSEMBL",dataset="hsapiens_gene_ensembl")
+  allGenesNames <- biomaRt::getBM(attributes=c("external_gene_name", "chromosome_name"),
+                                  filters="chromosome_name",
+                                  values=seq(1, 23),
+                                  mart=mart,
+                                  useCache=FALSE)
+
+  data.combined = foreach(i = 1:length(data), .combine = "c") %dopar%{
+    data.i = data[[i]]
+    gene.list = rownames(data.i)
+
+    genesNames = allGenesNames[match(unique(gene.list), allGenesNames$external_gene_name), ]
+    genesNames = genesNames[which(genesNames$chromosome_name %in% seq(1, 23)), ]
+    new.data = data.i[genesNames$external_gene_name, ]
+
+    CovCoExpNets::convertToNamedList(new.data, names(data), i, return.list)
+  }
+
+  CovCoExpNets::returnList(return.list, data.combined)
 }
 
 
@@ -350,12 +388,12 @@ splitByCondition <- function(data, bool.matrix, names = NA){
 #'   provided, it will return the reduced matrix, not a list.
 #' @export
 dataPreprocess <- function(data, doLog2 = T, doAT = T, doNZV = T, doGTExCorr = T, doProtCod = T, doZSco = T, doCorr = F,
-                           threshold = 0.1, perc = 0.8, freqCut = 20, uniqueCut = 5,  sigDigits = 1, by.columns = F, cutoff = 0.9){
+                           threshold = 0.1, perc = 0.8, freqCut = 20, uniqueCut = 5,  sigDigits = 1, includeSexChromosomes = T, by.columns = F, cutoff = 0.9){
   if(doLog2) data <- applyLog2(data)
   if(doAT) data <- applyActiveThreshold(data, threshold = threshold, perc = perc)
   if(doNZV) data <- applyNearZeroVar(data, freqCut = freqCut, uniqueCut = uniqueCut, sigDigits = sigDigits)
   if(doGTExCorr) data <- correctGTExNames(data)
-  if(doProtCod) data <- applyProteinCodingRequirement(data)
+  if(doProtCod) data <- applyProteinCodingRequirement(data, includeSexChromosomes)
   if(doCorr) data <- applyCorrSkew(data, cutoff = cutoff)
   if(doZSco) data <- applyZScore(data, by.columns)
 

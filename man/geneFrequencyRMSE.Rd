@@ -11,8 +11,8 @@ geneFrequencyRMSE(
   k.folds = 10,
   train.split = 1,
   iter.RMSE = F,
-  data.test.extra,
-  covariate.test.extra,
+  data.test.extra = NULL,
+  covariate.test.extra = NULL,
   sample.prob = c(),
   seed = sample(1:999999, 1),
   glmnet.family = "gaussian"

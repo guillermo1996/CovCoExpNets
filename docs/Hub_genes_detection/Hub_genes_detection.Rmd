@@ -28,7 +28,10 @@ library(CovCoExpNets)
 library(magrittr)
 library(dplyr)
 library(logger)
-doParallel::registerDoParallel(13)
+
+#doParallel::registerDoParallel(13)
+cl <- makeCluster(13)
+doParallel::registerDoParallel(cl)
 ```
 
 As for the input data, we will use the preprocessed data obtained from the [Data extraction tutorial](../Data_preparation). We need a data matrix with genes as rows and samples as columns, as well as a numeric vector for the covariate. In our case, we will use the data and age for the Cortex tissue, but this tutorial will work if a list of data matrices and a list of covariate vectors were used.
@@ -55,7 +58,7 @@ The whole pipeline to obtain the hub genes is as follows:
 
 ```{r cache = TRUE}
 genes.freq = CovCoExpNets::geneFrequency(data, age, t = 10, seed = 1796)
-genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
 cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
 genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 ```
@@ -189,5 +192,34 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 ```{r cache = TRUE}
 lapply(genes.relevant, function(x) head(x, 5))
+```
+
+## Predicting the sex
+
+The `CovCoExpNets` package is also functional for binary covariates, like the sex of the samples' donors. Using the `glmnet.family` across the different functions, we can generate the most relevant genes to predict the sex. It is important to notice that we cannot use the same dataset as before, since they included sexual genes. To predict the age, we are interested only in autosomal genes.
+
+```{r}
+brain_data.path <- "~/GTEx_data/"
+
+data.autosomes = readRDS(paste0(brain_data.path, "data.autosomes.combined.rds"))
+sex = readRDS(paste0(brain_data.path, "sex.combined.rds"))
+
+data.autosomes = data.autosomes[["Cortex"]]
+sex = sex[["Cortex"]]
+```
+
+```{r}
+genes.freq = CovCoExpNets::geneFrequency(data.autosomes, sex, t = 10, seed = 1796, glmnet.family = "binomial")
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
+cvfit = CovCoExpNets::glmnetGenesSubset(data.autosomes, sex, genes.subset, seed = 1796, glmnet.family = "binomial")
+genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
+
+head(genes.relevant, 10)
+```
+
+
+
+```{r}
+stopCluster(cl)
 ```
 
