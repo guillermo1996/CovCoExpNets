@@ -76,7 +76,11 @@ splitDataBootstrap <- function(data, covariate, seed = sample(1:9999999, 1)){
                     covariate.train = covariate.train,
                     covariate.test = covariate.test)
 
-  return(returnList(return.list, data.split))
+  if(return.list){
+    return(data.split)
+  }else{
+    return(lapply(data.split, function(x) x[[1]]))
+  }
 }
 
 
