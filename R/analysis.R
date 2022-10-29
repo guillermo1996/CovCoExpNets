@@ -48,6 +48,7 @@ get.r2_adj <- function(r2, n, p){
 #'
 #' @return The calculated adjuted r^2
 #' @export
+
 evaluateModel <- function(cvfit, data.test, covariate.test, genes.subset, data.train = NA, covariate.train = NA, m = NA, d = NA){
   return.list = is(cvfit, "list")
   if(!return.list){
@@ -80,7 +81,6 @@ evaluateModel <- function(cvfit, data.test, covariate.test, genes.subset, data.t
     condition.name = if(return.list) names(cvfit)[i] else "Condition"
     relevant.genes = extractModelGenes(cvfit.i)$Genes
 
-    print(is.na(data.train.i[[1]]))
     if(!is.na(data.train.i[[1]]) & !is.na(covariate.train.i[[1]])){
       predict.train = predict(cvfit.i, s = "lambda.min", newx = t(data.train.i[genes.subset.i, ]), type = "response")
       rmse.train = MLmetrics::RMSE(predict.train*d.i + m.i, covariate.train.i*d.i + m.i)

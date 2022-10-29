@@ -10,6 +10,9 @@ geneFrequency(
   t = 10,
   k.folds = 10,
   train.split = 1,
+  iter.RMSE = F,
+  data.test.extra = NULL,
+  covariate.test.extra = NULL,
   sample.prob = c(),
   seed = sample(1:999999, 1),
   glmnet.family = "gaussian"
@@ -26,6 +29,12 @@ geneFrequency(
 (\link[glmnet]{cv.glmnet}). Defaults to 10}
 
 \item{train.split}{numeric percentage of samples to take as train}
+
+\item{iter.RMSE}{boolean, whether to measure the RMSE of all iterations}
+
+\item{data.test.extra}{list of numeric expression matrices to calculate the RMSE}
+
+\item{covariate.test.extra}{list of numeric vectors to calculate the RMSE}
 
 \item{sample.prob}{list of numeric vectors as weights when applying
 \link[base]{sample}}
@@ -45,6 +54,7 @@ relevant and its coefficient. The inputs can be either a list object
 generated from previous CovCoExpNets functions or individual condition variables.
 }
 \details{
-To measure the RMSE per iteration, please refer to the \link[CovCoExpNets]{geneFrequencyRMSE}
-function.
+It can also measure the RMSE of each iteration if the argument iter.RMSE is set
+to TRUE. The test dataset can be provided with train.split < 1 or if extra data
+is provided in data.test.extra and covariate.test.extra
 }

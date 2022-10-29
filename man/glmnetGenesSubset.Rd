@@ -13,7 +13,9 @@ glmnetGenesSubset(
   sample.prob = c(),
   seed = sample(1:999999, 1),
   glmnet.family = "gaussian",
-  return.genes.subset = F
+  evaluate.model = T,
+  m = NA,
+  d = NA
 )
 }
 \arguments{
@@ -33,13 +35,18 @@ glmnetGenesSubset(
 
 \item{seed}{fixed seed to generate split the dataset in train/test}
 
-\item{return.genes.subset}{whether to return the hub genes along with
-the glmnet model. Recommended to FALSE and use \link[CovCoExpNets]{extractModelGenes}
-on the model later on. Defaults to FALSE.}
+\item{evaluate.model}{whether to evaluate the generated models
+using train/test splits with the train.split argument.}
+
+\item{m}{list of means for the covariate}
+
+\item{d}{list of standard deviations for the covariate}
 }
 \value{
 list of the generated glmnet object. If only one data matrix is
-provided, it will return only one object, not a list.
+provided, it will return only one object, not a list. If the evaluate
+argument is set to TRUE, it will also return the results of
+evaluating the model with the test dataset provided.
 }
 \description{
 The inputs can be either a list object generated from previous CovCoExpNets

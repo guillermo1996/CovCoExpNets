@@ -1,6 +1,6 @@
 Package: CovCoExpNets
 Title: Development of covariate specific co-expression networks
-Version: 0.0.3.4300
+Version: 0.0.3.4500
 Authors@R: c(
     person(given = "Guillermo",
            family = "Rocamora Pérez",

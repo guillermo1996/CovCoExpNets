@@ -55,65 +55,9 @@ extractModelGenes <- function(cvfit, genes.freq = NULL){
 #' relevant and its coefficient. The inputs can be either a list object
 #' generated from previous CovCoExpNets functions or individual condition variables.
 #'
-#' To measure the RMSE per iteration, please refer to the \link[CovCoExpNets]{geneFrequencyRMSE}
-#' function.
-#'
-#' @param data list of numeric expression matrices
-#' @param covariate list of numeric vectors
-#' @param t number of times to repeat the train/test split. Defaults to 10
-#' @param k.folds number of kfolds to execute in the GLMNET algorithm
-#'   (\link[glmnet]{cv.glmnet}). Defaults to 10
-#' @param train.split numeric percentage of samples to take as train
-#' @param sample.prob list of numeric vectors as weights when applying
-#'   \link[base]{sample}
-#' @param seed fixed seed to generate split the dataset in train/test
-#' @param glmnet.family see \link[glmnet]{cv.glmnet} family parameter.
-#'
-#' @return list of vectors containing the genes selected for each condition. If
-#'   only one data matrix is provided, it will return the reduced matrix, not a
-#'   list.
-#' @export
-geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1, sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
-  return.list = is(data, "list")
-  if(!return.list){
-    data = list(data)
-    covariate = list(covariate)
-    sample.prob = list(sample.prob)
-  }
-
-  genes.freq.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets")) %do%{
-    data.i = data[[i]]
-    covariate.i = covariate[[i]]
-    sample.prob.i = sample.prob[[i]]
-
-    set.seed(seed)
-    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
-
-    data.train = t(data.i[, ind.train])
-    covariate.train = covariate.i[ind.train]
-
-    genes.freq = foreach(j = 1:t, .combine = "rbind", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
-      set.seed(seed + i + j)
-      cvfit.t = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
-      dplyr::bind_cols(extractModelGenes(cvfit.t), iter = j)
-    }
-
-    genes.freq = list(genes.freq)
-    names(genes.freq) = if(return.list) names(data)[i] else "Condition"
-    genes.freq
-  }
-
-  return(returnList(return.list, genes.freq.combined))
-}
-
-#' GLMNET repetitions with RMSE (In development)
-#'
-#' Executes GLMNET a set number of times (t) and extracts the genes selected as
-#' relevant and its coefficient. The inputs can be either a list object
-#' generated from previous CovCoExpNets functions or individual condition variables.
-#'
-#' It can also measure the RMSE of each iteration if train.spli != 1 or if extra data
-#' was provided in data.test.extra and covariate.test.extra
+#' It can also measure the RMSE of each iteration if the argument iter.RMSE is set
+#' to TRUE. The test dataset can be provided with train.split < 1 or if extra data
+#' is provided in data.test.extra and covariate.test.extra
 #'
 #' @param data list of numeric expression matrices
 #' @param covariate list of numeric vectors
@@ -133,9 +77,17 @@ geneFrequency <- function(data, covariate, t = 10, k.folds = 10, train.split = 1
 #'   only one data matrix is provided, it will return the reduced matrix, not a
 #'   list.
 #' @export
-geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split = 1,
-                          iter.RMSE = F, data.test.extra = NULL, covariate.test.extra = NULL,
-                          sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian"){
+geneFrequency <- function(data,
+                          covariate,
+                          t = 10,
+                          k.folds = 10,
+                          train.split = 1,
+                          iter.RMSE = F,
+                          data.test.extra = NULL,
+                          covariate.test.extra = NULL,
+                          sample.prob = c(),
+                          seed = sample(1:999999, 1),
+                          glmnet.family = "gaussian"){
   return.list = is(data, "list")
   if(!return.list){
     data = list(data)
@@ -154,7 +106,7 @@ geneFrequencyRMSE <- function(data, covariate, t = 10, k.folds = 10, train.split
     sample.prob.i = sample.prob[[i]]
 
     set.seed(seed)
-    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
+    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i) %>% sort()
 
     data.train = t(data.i[, ind.train])
     covariate.train = covariate.i[ind.train]
@@ -264,15 +216,28 @@ reduceGenes <- function(genes.freq, mrfa = 0.9, force.mrfa = T, relative = T){
 #' @param sample.prob list of numeric vectors as weights when applying
 #'   \link[base]{sample}
 #' @param seed fixed seed to generate split the dataset in train/test
-#' @param return.genes.subset  whether to return the hub genes along with
-#'   the glmnet model. Recommended to FALSE and use \link[CovCoExpNets]{extractModelGenes}
-#'   on the model later on. Defaults to FALSE.
+#' @param evaluate.model whether to evaluate the generated models
+#'   using train/test splits with the train.split argument.
+#' @param m list of means for the covariate
+#' @param d list of standard deviations for the covariate
 #'
 #' @return list of the generated glmnet object. If only one data matrix is
-#'   provided, it will return only one object, not a list.
+#'   provided, it will return only one object, not a list. If the evaluate
+#'   argument is set to TRUE, it will also return the results of
+#'   evaluating the model with the test dataset provided.
 #' @export
 #data = t(x); covariate = y; genes.subset = pred.subset; t = 10; k.folds = 10; train.split = 1; iter.RMSE = F; data.test.extra = NA; covariate.test.extra = NA; sample.prob = c(); seed = sample(1:999999, 1); glmnet.family = "gaussian"; given.test.extra = F
-glmnetGenesSubset <- function(data, covariate, genes.subset, k.folds = 10, train.split = 1.0, sample.prob = c(), seed = sample(1:999999, 1), glmnet.family = "gaussian", return.genes.subset = F){
+glmnetGenesSubset <- function(data,
+                              covariate,
+                              genes.subset,
+                              k.folds = 10,
+                              train.split = 1.0,
+                              sample.prob = c(),
+                              seed = sample(1:999999, 1),
+                              glmnet.family = "gaussian",
+                              evaluate.model = T,
+                              m = NA,
+                              d = NA){
   return.list = is(data, "list")
   if(!return.list){
     data = list(data)
@@ -281,7 +246,7 @@ glmnetGenesSubset <- function(data, covariate, genes.subset, k.folds = 10, train
     sample.prob = list(sample.prob)
   }
 
-  cvfit.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
+  models.combined = foreach(i = 1:length(data), .combine = "c", .packages=c("dplyr", "CovCoExpNets", "glmnet")) %dopar%{
     data.i = data[[i]]
     covariate.i = covariate[[i]]
     genes.subset.i = genes.subset[[i]]
@@ -294,14 +259,23 @@ glmnetGenesSubset <- function(data, covariate, genes.subset, k.folds = 10, train
     covariate.train = covariate.i[ind.train]
 
     cvfit = glmnet::cv.glmnet(data.train, covariate.train, nfolds = k.folds, alpha = 1, family = glmnet.family)
-    if(return.genes.subset){
-      cvfit = list(list(cvfit = cvfit, genes.relevant = extractModelGenes(cvfit)))
+
+    if(evaluate.model){
+      data.test = t(data.i[, -ind.train])
+      covariate.test = covariate.i[-ind.train]
+
+      print("cosa")
+      model.evaluation = CovCoExpNets::evaluateModel(cvfit, t(data.test), covariate.test, genes.subset.i, t(data.train), covariate.train, m = m, d = d)
+      print(model.evaluation)
+
+      model = list(list(cvfit = cvfit, evaluation = model.evaluation))
     }else{
-      cvfit = list(cvfit)
+      model = list(cvfit)
     }
-    names(cvfit) <- if(return.list) names(data)[i] else "Condition"
-    cvfit
+
+    names(model) <- if(return.list) names(data)[i] else "Condition"
+    model
   }
 
-  return(returnList(return.list, cvfit.combined))
+  return(returnList(return.list, models.combined))
 }

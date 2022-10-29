@@ -14,6 +14,11 @@
 Data extraction from the GTEx portal
 ====================================
 
+In this tutorial, we aim to cover how to download and preprocess the
+required data to run an example use case of CovCoExpNets. The objective
+is to download the GTEx TPM data and the covariates of the samples’
+donors, specifically, their age and sex.
+
 Requirements
 ------------
 
@@ -31,14 +36,14 @@ doParallel::registerDoParallel(cl)
 ```
 
 The package `data.table` is required to read the initial data files from
-the GTEx, as well as for some data.frame manipulation later on. The
-package `magrittr` allows to use of the pipe-like operator `%>%`, which
-is employed across all tutorials and this package for its convenience.
-In addition, the `CovCoExpNets` package uses the package `doParallel`
-and `foreach` to execute as many steps in parallel as possible. Since we
+GTEx, as well as for some data.frame manipulation later on. The package
+`magrittr` allows to use of the pipe-like operator `%>%`, which is
+employed across all tutorials and this package for its convenience. In
+addition, the `CovCoExpNets` package uses the package `doParallel` and
+`foreach` to execute as many steps in parallel as possible. Since we
 work with different brain tissues and they do not interact with each
-other, it is possible to parallelize most parts of this tutorial.
-However, we need to specify the number of cores available.
+other, it is possible to parallelize most parts of this tutorial. We
+also use the `logger` package.
 
 Later on, we will also use the package `caret` to split the dataset by
 tissues, but it is only required if you are interested in more than one
@@ -92,7 +97,7 @@ Step 2: Extract brain samples by tissues
 ----------------------------------------
 
 The step to extract the brain data by tissues is a bit complex and can
-be split in different steps:
+be split in different tasks:
 
 1.  Extract the data samples’ ID for the brain tissues.
 
@@ -115,8 +120,8 @@ data <- as.matrix(data, rownames = df.samples$Name)
 rm(df.samples)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    1806926   96.6    3041455   162.5    3041455   162.5
-#> Vcells 1091354866 8326.4 2662336689 20312.1 2216893795 16913.6
+#> Ncells    1806828   96.5    3041447   162.5    3041447   162.5
+#> Vcells 1091354873 8326.4 2662336697 20312.1 2216893802 16913.6
 
 # Construct a dummy matrix with samples as rows and tissues as columns.
 # If a sample is from a given tissue, it will have a 1 in the corresponding
@@ -136,8 +141,8 @@ data <- CovCoExpNets::splitByCondition(data, df.bool_data)
 rm(df.samples_data)
 gc() 
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2324646  124.2    4675080   249.7    3041455   162.5
-#> Vcells 1092760004 8337.1 2662336689 20312.1 2216893795 16913.6
+#> Ncells    2326604  124.3    4680680   250.0    3041447   162.5
+#> Vcells 1092762916 8337.2 2662336697 20312.1 2216893802 16913.6
 ```
 
 In the end, we should have a `data` variable with a list containing the
@@ -186,8 +191,8 @@ sex <- generateCovariate(data, df.subjects, "SEX")
 rm(df.subjects)
 gc()
 #>              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-#> Ncells    2325247  124.2    4675080   249.7    3041455   162.5
-#> Vcells 1092771695 8337.2 2662336689 20312.1 2216893795 16913.6
+#> Ncells    2327205  124.3    4680680   250.0    3041447   162.5
+#> Vcells 1092774607 8337.3 2662336697 20312.1 2216893802 16913.6
 ```
 
 At the end of this step, we should have three variables: `data`, `age`

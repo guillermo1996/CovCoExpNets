@@ -17,6 +17,8 @@ knitr::opts_chunk$set(
 
 # Data extraction from the GTEx portal
 
+In this tutorial, we aim to cover how to download and preprocess the required data to run an example use case of CovCoExpNets. The objective is to download the GTEx TPM data and the covariates of the samples' donors, specifically, their age and sex.
+
 ## Requirements
 
 The requirements for this tutorial are the following libraries:
@@ -32,7 +34,7 @@ cl <- makeCluster(13)
 doParallel::registerDoParallel(cl)
 ```
 
-The package `data.table` is required to read the initial data files from the GTEx, as well as for some data.frame manipulation later on. The package `magrittr` allows to use of the pipe-like operator `%>%`, which is employed across all tutorials and this package for its convenience. In addition, the `CovCoExpNets` package uses the package `doParallel` and `foreach` to execute as many steps in parallel as possible. Since we work with different brain tissues and they do not interact with each other, it is possible to parallelize most parts of this tutorial. However, we need to specify the number of cores available.
+The package `data.table` is required to read the initial data files from GTEx, as well as for some data.frame manipulation later on. The package `magrittr` allows to use of the pipe-like operator `%>%`, which is employed across all tutorials and this package for its convenience. In addition, the `CovCoExpNets` package uses the package `doParallel` and `foreach` to execute as many steps in parallel as possible. Since we work with different brain tissues and they do not interact with each other, it is possible to parallelize most parts of this tutorial. We also use the `logger` package.
 
 Later on, we will also use the package `caret` to split the dataset by tissues, but it is only required if you are interested in more than one tissue or condition.
 
@@ -65,7 +67,7 @@ download.file(sample_info, paste0(data.path, "sample_info.txt"))
 
 ## Step 2: Extract brain samples by tissues
 
-The step to extract the brain data by tissues is a bit complex and can be split in different steps:
+The step to extract the brain data by tissues is a bit complex and can be split in different tasks:
 
 1. Extract the data samples' ID for the brain tissues.
 
