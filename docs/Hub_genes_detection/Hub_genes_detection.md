@@ -10,6 +10,10 @@
     -   [Step 4: Genes and coefficients
         extraction](#step-4-genes-and-coefficients-extraction)
 -   [Functions employed:](#functions-employed)
+-   [Train/test split](#traintest-split)
+    -   [Traditional split](#traditional-split)
+    -   [Bootstrap](#bootstrap)
+    -   [Hidden split](#hidden-split)
 -   [Multiple conditions](#multiple-conditions)
 -   [Predicting the sex](#predicting-the-sex)
 
@@ -85,7 +89,7 @@ The whole pipeline to obtain the hub genes is as follows:
 ``` r
 genes.freq = CovCoExpNets::geneFrequency(data, age, t = 10, seed = 1796)
 genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
-cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
+cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796, evaluate.model = F)
 genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 ```
 
@@ -96,11 +100,12 @@ hyperparameter (by default 0.9). The output is a list of the hub genes:
 ``` r
 # First 25 relevant genes for Cortex tissue:
 genes.relevant$Genes[1:25]
-#>  [1] EDA2R     ADRA2B    ZNF229    BAIAP2L2  C12orf60  GPR26     POC1A    
-#>  [8] HAP1      FATE1     IQGAP3    MCF2L2    IGF1      PARPBP    KISS1R   
-#> [15] LBHD1     SYT6      ABCB4     ETV4      QPRT      SOX7      ADAD2    
-#> [22] TLX2      TFCP2L1   ZKSCAN8P1 SCUBE1   
-#> 182 Levels: AARD ABCB4 ADAD2 ADRA2B AHRR ALDH3A1 ALOX15 ALOX15B ALPL ... ZP3
+#>  [1] EDA2R      ADRA2B     BAIAP2L2   ZNF229     C12orf60   GPR26     
+#>  [7] POC1A      HAP1       IQGAP3     FATE1      MCF2L2     IGF1      
+#> [13] TLX2       ST6GALNAC2 SYT6       SCUBE1     ETV4       ABCB4     
+#> [19] SOX7       LBHD1      RPSA       PARPBP     TSPOAP1    ZP3       
+#> [25] ZKSCAN8P1 
+#> 214 Levels: AARD ABCB4 ADAD2 ADAMTS7 ADRA2B AHRR ALDH3A1 ALOX15 ALOX15B ... ZP3
 ```
 
 Steps
@@ -124,19 +129,24 @@ selected by each iteration and their coefficients.
 ``` r
 head(genes.freq, 5)
 #>      Genes Coefficients iter
-#> 1    EDA2R    0.2404529    1
-#> 2    GPR26   -0.1660976    1
-#> 3   ZNF229   -0.1582700    1
-#> 4   ADRA2B   -0.1576799    1
-#> 5 BAIAP2L2    0.1458428    1
+#> 1    EDA2R    0.2500961    1
+#> 2   ADRA2B   -0.1690084    1
+#> 3 BAIAP2L2    0.1617018    1
+#> 4   ZNF229   -0.1608639    1
+#> 5    GPR26   -0.1472022    1
 tail(genes.freq, 5)
 #>       Genes  Coefficients iter
-#> 2354 PCDHB8  4.974914e-05   10
-#> 2355    LPA -9.606374e-06   10
-#> 2356   LSM6  7.456103e-06   10
-#> 2357  KYAT3 -1.796169e-06   10
-#> 2358  TNNT2  1.633166e-06   10
+#> 2438 PCDHB8  4.974914e-05   10
+#> 2439    LPA -9.606374e-06   10
+#> 2440   LSM6  7.456103e-06   10
+#> 2441  KYAT3 -1.796169e-06   10
+#> 2442  TNNT2  1.633166e-06   10
 ```
+
+Additionally, we can use the argument `iter.RMSE` to calculate the RMSE
+of each `glmnet` repetition. To do so, we need to provide additional
+testing data with `data.test.extra` and `covariate.test.extra` or to
+input a `train.split < 1`.
 
 Step 2: Minimum relative ratio of appearance threshold
 ------------------------------------------------------
@@ -153,19 +163,19 @@ We require a minimum appearance threshold.
 By default, we recommend an *mrfa* of 0.9:
 
 ``` r
-genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = T)
 
 # First 25 genes:
 genes.subset[1:25]
-#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADRA2B"    "AHRR"      "ALDH3A1"  
-#>  [7] "ALOX15"    "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B"  "ANKRD33"  
-#> [13] "APC"       "APOC1"     "ARHGAP11A" "ASCL2"     "ATAD3C"    "BAIAP2L2" 
-#> [19] "C12orf60"  "C1orf53"   "C1QL4"     "C1QTNF12"  "CACFD1"    "CAPN14"   
-#> [25] "CARD16"
+#>  [1] "AARD"      "ABCB4"     "ADAD2"     "ADAMTS7"   "ADRA2B"    "AHRR"     
+#>  [7] "ALDH3A1"   "ALOX15"    "ALOX15B"   "ALPL"      "AMZ1"      "ANKRD18B" 
+#> [13] "ANKRD33"   "APC"       "APOBEC3A"  "APOBEC3C"  "APOC1"     "ARHGAP11A"
+#> [19] "ARL17A"    "ASCL2"     "ASF1B"     "ATAD3C"    "BAIAP2L2"  "C12orf54" 
+#> [25] "C12orf60"
 ```
 
 The output will be a set of genes that pass the threshold. In total,
-there were 269 different genes across all repetitions, while 191 of
+there were 259 different genes across all repetitions, while 230 of
 those passed the threshold.
 
 Step 3: Model generation
@@ -183,10 +193,21 @@ cvfit
 #> 
 #> Measure: Mean-Squared Error 
 #> 
-#>        Lambda Index Measure       SE Nonzero
-#> min 0.0005074    74 0.03315 0.003555     182
-#> 1se 0.0012865    64 0.03635 0.003583     180
+#>       Lambda Index Measure       SE Nonzero
+#> min 0.001867    60 0.06773 0.008122     214
+#> 1se 0.002972    55 0.07581 0.006457     218
 ```
+
+The resulted final model can be evaluated in two ways:
+
+1.  If the argument `evalute.model` and a `train.split` argument smaller
+    than 1 are provided to the `glmnetGenesSubset()` function, the
+    returned object will be a list of the model (`cvfit`) and the
+    evaluation (`evaluation`).
+2.  If the train/test split is done outside of `glmnetGenesSubset()`,
+    then use the function `evaluateModel()`, with the additional test
+    dataset as arguments (example in later
+    [section](#Train/test-split)).
 
 Step 4: Genes and coefficients extraction
 -----------------------------------------
@@ -199,16 +220,16 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 head(genes.relevant, 10)
 #>       Genes Coefficients
-#> 1     EDA2R   0.26777221
-#> 2    ADRA2B  -0.17828527
-#> 3    ZNF229  -0.17157346
-#> 4  BAIAP2L2   0.16618988
-#> 5  C12orf60  -0.14479918
-#> 6     GPR26  -0.12854039
-#> 7     POC1A  -0.11831739
-#> 8      HAP1   0.10563272
-#> 9     FATE1   0.10443456
-#> 10   IQGAP3   0.09883007
+#> 1     EDA2R    0.2532954
+#> 2    ADRA2B   -0.1844454
+#> 3  BAIAP2L2    0.1692918
+#> 4    ZNF229   -0.1641643
+#> 5  C12orf60   -0.1329406
+#> 6     GPR26   -0.1187161
+#> 7     POC1A   -0.1113262
+#> 8      HAP1    0.1096197
+#> 9    IQGAP3    0.1046102
+#> 10    FATE1    0.1016612
 ```
 
 The list of hub genes is found in the “Genes” column of `genes.relevant`
@@ -305,10 +326,10 @@ The required functions to execute the pipeline are:
         `cv.glmnet` function. See
         [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet)
         for more details about the `family` parameter.
-    -   **return.genes.subset:** (optional) whether to return the hub
-        genes along with the `glmnet` model. Recommended to FALSE and
-        use `extractModelGenes` from `CovCoExpNets` over the model later
-        on. Defaults to FALSE.
+    -   **evaluate.model:** (optional) whether to evaluate the generated
+        models using train/test splits with the train.split argument.
+    -   **m:** (optional) list of means for the covariate.
+    -   **d:** (optional) list of standard deviations for the covariate.
 
 -   **extractModelGenes:** extract the relevant predictors from a
     `glmnet` model. It has the following arguments.
@@ -318,6 +339,79 @@ The required functions to execute the pipeline are:
     -   **genes.freq:** data.frame obtained from `geneFrequency`. If
         provided, it will also return the average coefficient of each
         gene across all glmnet repetitions. Defaults to none.
+
+Train/test split
+================
+
+The train/test split can be done in several ways:
+
+Traditional split
+-----------------
+
+Most of the functions are compatible with the use of separate train and
+test dataset:
+
+``` r
+set.seed(1796)
+train.idx = sample(1:ncol(data), 0.75*ncol(data))
+
+data.train = data[, train.idx]
+data.test = data[, -train.idx]
+
+age.train = age[train.idx]
+age.test = age[-train.idx]
+
+genes.freq = geneFrequency(data.train, age.train, t = 10, seed = 1796, data.test.extra = data.test, covariate.test.extra = age.test, iter.RMSE = T)
+genes.subset = reduceGenes(genes.freq, mrfa = 0.9)
+cvfit = glmnetGenesSubset(data.train, age.train, genes.subset, seed = 1796, evaluate.model = F)
+evaluateModel(cvfit, data.test, age.test, genes.subset, data.train = data.train, covariate.train = age.train, m = m, d = d)
+#>   Condition rmse.test rmse.train rmse.bootstrap rmse.null Samples.train
+#> 1 Condition  6.666868   1.033669       4.593851   9.30509           191
+#>   Samples.test Initial.predictors Returned.predictors  r2.train  r2.test
+#> 1           64              15516                 108 0.9900352 0.484671
+#>   r2_adj.train r2_adj.test
+#> 1    0.9769107    1.721461
+```
+
+Bootstrap
+---------
+
+The `CovCoExpNets` package allows for the generation of datasets via
+bootstrapping technique:
+
+``` r
+data.bootstrap = splitDataBootstrap(data, age, seed = 1796)
+
+data.train = data.bootstrap$data.train
+data.test = data.bootstrap$data.test
+
+age.train = data.bootstrap$covariate.train
+age.test = data.bootstrap$covariate.test
+```
+
+Hidden split
+------------
+
+It is also possible to use the `train.split` argument inside most of the
+functions to ignore the train/test split directly. It is important then
+to keep a consistent `seed` across the different functions, or the
+train/test splits will be different:
+
+``` r
+genes.freq = geneFrequency(data, age, t = 10, train.split = 0.75, seed = 1796, iter.RMSE = T)
+genes.subset = reduceGenes(genes.freq, mrfa = 0.9)
+glmnet.models = glmnetGenesSubset(data, age, genes.subset, train.split = 0.75, seed = 1796, evaluate.model = T, m = m, d = d)
+
+cvfit = glmnet.models$cvfit
+
+glmnet.models$evaluation
+#>   Condition rmse.test rmse.train rmse.bootstrap rmse.null Samples.train
+#> 1 Condition  7.234244   1.701644       5.198247   9.30509           191
+#>   Samples.test Initial.predictors Returned.predictors r2.train   r2.test
+#> 1           64              15516                  82 0.972995 0.3932257
+#>   r2_adj.train r2_adj.test
+#> 1    0.9524911    3.011936
+```
 
 Multiple conditions
 ===================
@@ -350,19 +444,19 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 lapply(genes.relevant, function(x) head(x, 5))
 #> [[1]]
 #>     Genes Coefficients
-#> 1 FAM126A   -0.2092029
-#> 2  PLAGL1   -0.1728505
-#> 3  SLC9A2   -0.1713773
-#> 4   RGS19    0.1572788
-#> 5   SYT16    0.1494378
+#> 1 FAM126A   -0.1687862
+#> 2   SYT16    0.1524898
+#> 3   RGS19    0.1491559
+#> 4   MTURN   -0.1444758
+#> 5  SLC9A2   -0.1289828
 #> 
 #> [[2]]
 #>     Genes Coefficients
-#> 1    WWC2   -0.1478869
-#> 2   PTPN3   -0.1418295
-#> 3  PLAGL1   -0.1243939
-#> 4 SLC12A1    0.1237764
-#> 5   WNT5B   -0.1225396
+#> 1    WWC2   -0.1477740
+#> 2   PTPN3   -0.1415790
+#> 3  PLAGL1   -0.1243174
+#> 4   WNT5B   -0.1230792
+#> 5 SLC12A1    0.1230452
 ```
 
 Predicting the sex
@@ -393,16 +487,16 @@ genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 
 head(genes.relevant, 10)
 #>         Genes Coefficients
-#> 1        TLX2     4.449681
-#> 2      SPESP1    -2.476102
-#> 3        HAAO     2.348379
-#> 4       ACOT4    -2.265550
-#> 5      SMIM24     1.909714
-#> 6       NLRP2     1.752245
-#> 7  CSGALNACT1     1.643682
-#> 8       ADAD2     1.606470
-#> 9        HPGD     1.566646
-#> 10      CHST9     1.331642
+#> 1        TLX2     4.256895
+#> 2       ACOT4    -2.383916
+#> 3      SPESP1    -2.369456
+#> 4        HAAO     2.244320
+#> 5        WEE1     2.091729
+#> 6       ADAD2     1.973587
+#> 7       NLRP2     1.768200
+#> 8  CSGALNACT1     1.692188
+#> 9        MYL7    -1.421576
+#> 10   PCDHGA12     1.405528
 ```
 
 ``` r

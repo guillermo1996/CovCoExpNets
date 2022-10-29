@@ -59,7 +59,7 @@ The whole pipeline to obtain the hub genes is as follows:
 ```{r cache = TRUE}
 genes.freq = CovCoExpNets::geneFrequency(data, age, t = 10, seed = 1796)
 genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = TRUE)
-cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
+cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796, evaluate.model = F)
 genes.relevant = CovCoExpNets::extractModelGenes(cvfit)
 ```
 
@@ -88,6 +88,8 @@ head(genes.freq, 5)
 tail(genes.freq, 5)
 ```
 
+Additionally, we can use the argument `iter.RMSE` to calculate the RMSE of each `glmnet` repetition. To do so, we need to provide additional testing data with `data.test.extra` and `covariate.test.extra` or to input a `train.split < 1`.
+
 ## Step 2: Minimum relative ratio of appearance threshold
 
 In this step, we reduce the list of predictors returned in each iteration. To do so, we use the hyperparameter *mrfa* to specify the minimum relative frequency in which a predictor must appear. To do so, we use the function `reduceGenes` from `CovCoExpNets`, where we count how many times each gene is selected as relevant across the `glmnet` repetitions and divide it by the total number of repetitions so that we have the percentage of repetitions in which it was selected as relevant. We require a minimum appearance threshold. 
@@ -95,7 +97,7 @@ In this step, we reduce the list of predictors returned in each iteration. To do
 By default, we recommend an *mrfa* of 0.9: 
 
 ```{r}
-genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9)
+genes.subset = CovCoExpNets::reduceGenes(genes.freq, mrfa = 0.9, relative = T)
 
 # First 25 genes:
 genes.subset[1:25]
@@ -112,6 +114,11 @@ cvfit = CovCoExpNets::glmnetGenesSubset(data, age, genes.subset, seed = 1796)
 
 cvfit
 ```
+
+The resulted final model can be evaluated in two ways:
+
+1. If the argument `evalute.model` and a `train.split` argument smaller than 1 are provided to the `glmnetGenesSubset()` function, the returned object will be a list of the model (`cvfit`) and the evaluation (`evaluation`).
+2. If the train/test split is done outside of `glmnetGenesSubset()`, then use the function `evaluateModel()`, with the additional test dataset as arguments (example in later [section](#Train/test-split)).
 
 ## Step 4: Genes and coefficients extraction
 
@@ -160,12 +167,66 @@ The required functions to execute the pipeline are:
     * **sample.prob:** (optional) when executing the train/test split, it dictates the probability of each sample being executed. See [sample](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sample) for more information.
     * **seed:** (optional) numeric seed to ensure reproducibility. Because of parallelization, even with an input seed results might differ.
     * **glmnet.family:** (optional) family parameter used in the `cv.glmnet` function. See [`glmnet`](https://www.rdocumentation.org/packages/glmnet/versions/4.1-4/topics/cv.glmnet) for more details about the `family` parameter.
-    * **return.genes.subset:** (optional) whether to return the hub genes along with the `glmnet` model. Recommended to FALSE and use `extractModelGenes` from `CovCoExpNets` over the model later on. Defaults to FALSE.
+    * **evaluate.model:** (optional) whether to evaluate the generated models using train/test splits with the train.split argument.
+    * **m:** (optional) list of means for the covariate.
+    * **d:** (optional) list of standard deviations for the covariate.
 
 * **extractModelGenes:** extract the relevant predictors from a `glmnet` model. It has the following arguments.
 
     * **cvfit:** `glmnet` model to extract the relevant predictors and their coefficients from.
     * **genes.freq:** data.frame obtained from `geneFrequency`. If provided, it will also return the average coefficient of each gene across all glmnet repetitions. Defaults to none.
+
+# Train/test split
+
+The train/test split can be done in several ways:
+
+## Traditional split
+
+Most of the functions are compatible with the use of separate train and test dataset:
+
+```{r}
+set.seed(1796)
+train.idx = sample(1:ncol(data), 0.75*ncol(data))
+
+data.train = data[, train.idx]
+data.test = data[, -train.idx]
+
+age.train = age[train.idx]
+age.test = age[-train.idx]
+
+genes.freq = geneFrequency(data.train, age.train, t = 10, seed = 1796, data.test.extra = data.test, covariate.test.extra = age.test, iter.RMSE = T)
+genes.subset = reduceGenes(genes.freq, mrfa = 0.9)
+cvfit = glmnetGenesSubset(data.train, age.train, genes.subset, seed = 1796, evaluate.model = F)
+evaluateModel(cvfit, data.test, age.test, genes.subset, data.train = data.train, covariate.train = age.train, m = m, d = d)
+```
+
+## Bootstrap
+
+The `CovCoExpNets` package allows for the generation of datasets via bootstrapping technique:
+
+```{r}
+data.bootstrap = splitDataBootstrap(data, age, seed = 1796)
+
+data.train = data.bootstrap$data.train
+data.test = data.bootstrap$data.test
+
+age.train = data.bootstrap$covariate.train
+age.test = data.bootstrap$covariate.test
+```
+
+## Hidden split
+
+It is also possible to use the `train.split` argument inside most of the functions to ignore the train/test split directly. It is important then to keep a consistent `seed` across the different functions, or the train/test splits will be different:
+
+```{r}
+genes.freq = geneFrequency(data, age, t = 10, train.split = 0.75, seed = 1796, iter.RMSE = T)
+genes.subset = reduceGenes(genes.freq, mrfa = 0.9)
+glmnet.models = glmnetGenesSubset(data, age, genes.subset, train.split = 0.75, seed = 1796, evaluate.model = T, m = m, d = d)
+
+cvfit = glmnet.models$cvfit
+
+glmnet.models$evaluation
+```
 
 # Multiple conditions
 

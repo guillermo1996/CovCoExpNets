@@ -13,7 +13,7 @@ glmnetGenesSubset(
   sample.prob = c(),
   seed = sample(1:999999, 1),
   glmnet.family = "gaussian",
-  evaluate.model = T,
+  evaluate.model = F,
   m = NA,
   d = NA
 )

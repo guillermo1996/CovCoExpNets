@@ -235,7 +235,7 @@ glmnetGenesSubset <- function(data,
                               sample.prob = c(),
                               seed = sample(1:999999, 1),
                               glmnet.family = "gaussian",
-                              evaluate.model = T,
+                              evaluate.model = F,
                               m = NA,
                               d = NA){
   return.list = is(data, "list")
@@ -253,7 +253,7 @@ glmnetGenesSubset <- function(data,
     sample.prob.i = sample.prob[[i]]
 
     set.seed(seed)
-    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i)
+    ind.train = sample(1:ncol(data.i), train.split*ncol(data.i), prob = sample.prob.i) %>% sort()
 
     data.train = t(data.i[genes.subset.i, ind.train])
     covariate.train = covariate.i[ind.train]
