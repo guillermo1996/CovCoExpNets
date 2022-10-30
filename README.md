@@ -1,40 +1,11 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Work in progress
+# CovCoExpNets
 
-This package is currently in development. 
+<!-- badges: start -->
 
-Recommended tutorials:
-
-  * [Data preparation](docs/Data_preparation)
-  * [Hub genes detection](docs/Hub_genes_detection)
-
-## Installation
-
-To install the package run:
-
-```r
-devtools::install_github("guillermo1996/CovCoExpNets")
-```
-
-<!---
-For a more stable version, please visit [Carmen María Hernandez's version](https://github.com/carmen-maria-hernandez/SuCoNets).
-
-## Modifications
-
-The main modification to this package is the added option to create a model not by the best data partition (as done previously with the `bestSeed` function), but by selecting the genes that appear the most after running the `glmnet` algorithm several times (ten by default). This produces a set of genes in which the user can choose the minimum number of appearances for a gene to be chosen.
-
-Let's see an example of this behavior. We first need an expression matrix previously treated with the `SuCoNets` pipeline and a covariate in the form of a numerical vector, also normalized following the instructions below. We start by running `geneSelection`, which produces a dataframe of the genes selected by `glmnet` and their frequency of appearance.  We then create the model by running `glmnetGenesSubset`.
-
-``` r
-genes.subset <- geneSelection(data, age, n = 5)
-cvfit <- glmnetGenesSubset(data, age, genes.subset)
-```
-
-From this point forwards, we can continue to run the `SuCoNets` pipeline.
-
-# SuCoNets
+<!-- badges: end -->
 
 Nowadays, the way to create a co-expression network is to use
 Hierarchical Clustering. This package allows you to create a
@@ -44,144 +15,152 @@ studied, so we are creating a supervised coexpression network.
 
 ## Installation
 
-You can install SuCoNets like so:
+CovCoExpNets can be installed with the following command:
 
 ``` r
-devtools::install_github("guillermo1996/SuCoNets")
+devtools::install_github("carmen-maria-hernandez/SuCoNets")
 ```
 
-## Example
+# Example of use
 
-Suppose we have an expression matrix, data, where the columns are blood
-samples and the rows are genes, so that each sample is identified by the
-numerical values taken by the genes. Let us also assume that the
-covariate we are going to study is the age of each individual to whom
-each blood sample corresponds. This covariate is given as a numerical
-vector, which we denote as age.
+## Hub gene detection
 
-An example of a typical execution of the functions contained in this
-package would be as follows.
+Suppose we have an expression matrix, `data`, with blood samples as
+columns and genes as rows. Each sample is identified by the numerical
+values taken by the genes. The particular covariate we are going to
+study is the age of the samples’ donors, given in a numerical vector
+denotated as `age`.
 
-We start by loading the package *SuCoNets*. Then, we normalize the age
-with the function `normalize` and change to logarithmic scale,
-centralize and normalize the expression matrix data with the function
-`scn`. We also removed redundant predictors by invoking the function
-`rRedundantPredictors`.
+The hub gene detection algorithm is based on Lasso repetitions, where
+the random effects of highly correlated variables are reduced by
+applying a certain number of repetitions `t`. The genes selected as
+relevant will constitute the final dataset to execute a Lasso
+regularization again. From the final model generated, we extract the
+relevant genes and their coefficients as their relevance to the given
+covariate.
 
-Note that the function `normalize` returns: first the mean of the vector
-we pass as parameter, then its standard deviation and then the vector,
-which we pass as parameter, normalized.
+### Data preprocessing
+
+The process starts by preprocessing the data. The specific details of
+this process are shown in its respective tutorial ([Data
+preparation](docs/Data_preparation)). As a summary, the dataset is first
+transformed to a logarithmic scale. Then, we require a minimum
+activation of 0.1 in at least 80% of the samples, followed by the
+removall of all non protein coding genes and those with a low variation
+across the samples. Lastly, we centralize and normalize the expression
+matrix. All of these steps are encompassed in the `dataPreprocess()`
+function, where every step can be individually modified or executed as
+requested.
 
 ``` r
-library(SuCoNets)
-age <- normalize(age)
-m <- age[1]
-d <- age[2]
-age <- age[-c(1,2)]
-data <- scn(data)
-data <- rRedundantPredictors(data)
+library(CovCoExpNets)
+library(dplyr)
+
+raw_data <- readRDS("raw_data.rds")
+data <- dataPreprocess(raw_data, includeSexChromosomes = T)
 ```
 
-Next, we calculate which seed produces the data partition (training set
-and test set) that gives the best results when running `glmnet`
-algorithm, so we can use that partition to run `glmnet` algorithm. With
-the function detectGenes we get the genes that `glmnet` algorithm has
-selected as important for age prediction
+As seen in the example, we can also filter by genes loacted in autosomal
+chromosomes. The specific covariate to study, the age, also needs to be
+normalized with the `normalize()` function:
 
 ``` r
-seed <- bestSeed(data,age)
+raw_age <- readRDS("raw_age.rds")
+age <- normalize(raw_age)
 
-cvfit <- glmnetGenes(data,age, seed)
-glmnet::print.cv.glmnet(cvfit)
-#> 
-#> Call:  glmnet::cv.glmnet(x = data.train, y = covariate.train, alpha = 1,      family = "gaussian") 
-#> 
-#> Measure: Mean-Squared Error 
-#> 
-#>      Lambda Index Measure      SE Nonzero
-#> min 0.03856    51  0.6071 0.03249      98
-#> 1se 0.07747    36  0.6360 0.03471      27
-
-selected.genes <- detectGenes(data,age,cvfit)
+m <- age$mean
+d <- age$standard.deviation
+age <- age$covariate
 ```
 
-We can study the stability of the genes selected by the glmnet algorithm
-with the function `stabilitySelection`. This function runs the glmnet
-algorithm ten times by varying the input data set and saves the genes
-that in each run glmnet selects as important for predicting the
-covariate under study. As a result, for the genes we are going to work
-with, this function shows the number of times that each of them has been
-selected in the different executions. The interesting thing about this
-function is to see the statistics of this selection, calling the summary
-function to see the result of the execution. In addition, with the
-function `histGeneFreq` we can plot a histogram with the number of genes
-that appear once in the different runs, the genes that appear twice,
-etc.
+The `normalize()` function also returns the mean and the standard
+deviation of the vector. This data will be later used to restore the
+predictions to an age scale.
+
+### `Glmnet` repetitions
+
+The next step in the hub gene detection is to execute the Lasso
+repetitions. The chosen Lasso implementation is the `glmnet` algorithm.
+With the function `geneFrequency()`, we set the number of repetitions
+(use `t=10` as a baseline). We can also set the train/test split and the
+initial seed to ensure reproducible results. We will then use the
+function `reduceGenes()` to specify the minimum relative frequency of
+appearance that a gene must have to be selected for the final model
+execution. In this example, we will set this hyperparameter to `mrfa
+= 0.9`.
 
 ``` r
-selection.statistics <- stabilitySelection(data, age, selected.genes)
-summary(selection.statistics[,2])
-#>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#>   1.000   4.000   6.000   6.418   9.750  10.000
-histGeneFreq(selection.statistics)
+genes_freq <- geneFrequency(data, age, t = 10, train.split = 0.8, seed = 1796)
+genes_subset <- reduceGenes(genes_freq, mrfa = 0.9, relative = T)
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+### Final model generation
 
-Now let’s look at a scatter plot with the predicted age and the actual
-age of both the test set and the train set. Note that the mean and
-standard deviation of the age must be passed as parameters to this
-function to be able to see in the scatter plot the ages in the real
-ranges.
+Once we have a first selection of relevant genes, we execute the
+function `glmnetGenesSubset()` to calcualte the final model and extract
+the relevant genes from
+it.
 
 ``` r
-comparisonActualPredictedCovariate(data, age, m, d, cvfit, seed)
-#> `geom_smooth()` using formula 'y ~ x'
+glmnet_model <- glmnetGenesSubset(data, age, genes_subset, train.split = 0.8, seed = 1796, evaluate.model = T, m = m, d = d)
+
+cvfit <- glmnet_model$cvfit
+evaluation <- glmnet_model$evaluation
 ```
 
-<img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
-
-We can also obtain a representation of all individuals in the analysis
-according to their age. Each individual will be represented by a dot.
-The blue dots represent the youngest individuals and the red dots
-represent the oldest. The individuals whose age is between these two,
-will be represented by a color contained in the gradient of these two
-colors. In order to perform this representation, we use the genes that
-the `glmnet` algorithm has selected, we perform a PCA on them and we
-plot the first two components of this PCA, which are the ones that
-explain the most variability in the data.
+We set the same `train.split` and `seed` as for the `glmnet` repetitions
+to ensure that the same training dataset was used to generate the model.
+Since we set the argument `evaluate.model` to `TRUE`, the returned
+predictor will contain both the generated model and the evaluation
+(i.e. RMSE). With information about the mean and standard deviation
+provided, the results will be in
+years.
 
 ``` r
-distributionIndividualsCovariate (data, age, selected.genes, m,d)
+evaluation %>% mutate(across(where(is.numeric), round, 3)) %>% knitr::kable()
 ```
 
-<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
+| Condition | rmse.test | rmse.train | rmse.bootstrap | rmse.null | Samples.train | Samples.test | Initial.predictors | Returned.predictors | r2.train | r2.test | r2\_adj.train | r2\_adj.test |
+| :-------- | --------: | ---------: | -------------: | --------: | ------------: | -----------: | -----------------: | ------------------: | -------: | ------: | ------------: | -----------: |
+| Condition |     5.676 |      0.322 |          3.706 |     9.004 |           204 |           51 |              15516 |                 173 |    0.999 |   0.598 |         0.993 |        1.163 |
 
-Finally, we compute the supervised coexpression network. This package
-provides two methods for constructing the networks. The
-`coexpressionNetworkFixed` function builds each cluster of the network
-using a fixed size that we pass as a parameter. The
-`coexpressionNetworkVariable` function builds the clusters by adding
-genes incrementally until adding a new gene does not provide significant
-information. Thus, the size of each cluster is not necessarily the same.
-In addition, we can call function `running.gprofiler` to obtain
-biological information about the networks.
+### Genes extraction
+
+To extract the relevant genes from the model, we use the function
+`extractModelGenes`:
 
 ``` r
-network.fixed <- coexpressionNetworkFixed(data, selected.genes, 50)
-network.variable <- coexpressionNetworkVariable(data, selected.genes, age)
-
-output.gprofiler2.fixed <- running.gprofiler(selected.genes, rep(51, nrow(selected.genes)), data, network.fixed)
-
-output.gprofiler2.variable <- running.gprofiler(selected.genes, network.variable[[2]], data, network.variable[[1]])
+relevant_genes <- extractModelGenes(cvfit)
+knitr::kable(relevant_genes %>% head(5))
 ```
+
+| Genes    | Coefficients |
+| :------- | -----------: |
+| EDA2R    |    0.2877469 |
+| BAIAP2L2 |    0.1573385 |
+| ADRA2B   |  \-0.1251515 |
+| GPR26    |  \-0.1232131 |
+| GFAP     |    0.1187436 |
+
+## Coexpression network generation
+
+# Other tutorials
+
+Other tutorials available to better understand how this package works
+are found in the *docs* directory:
+
+  - [Data preparation](docs/Data_preparation)
+  - [Hub genes detection](docs/Hub_genes_detection)
+  - [Covariate simulations](docs/Simulation_framework)
+  - [`Glmnet` stability studies](docs/Stability_glmnet)
 
 # Credits
 
 This package is based on the package *glmnet*, available at the
 following URL:
-<https://cran.r-project.org/web/packages/glmnet/glmnet.pdf>. And it has
-been supervised by Juan A. Botía (Universidad de Murcia),
-<https://github.com/juanbot>, who has also contributed to its design.
-
- -->
+<https://cran.r-project.org/web/packages/glmnet/glmnet.pdf>. It is also
+a fork of the package *SuCoNets*, developed by Carmen María Hernandez
+Both *CovCoExpNets* and *SuCoNets* have been supervised by both Juan A.
+Botía (Universidad de Murcia) (<https://github.com/juanbot>) and Alicia
+Gómez Pascual (Universidad de Murcia), who also contributed to its
+design.
