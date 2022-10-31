@@ -18,7 +18,7 @@ studied, so we are creating a supervised coexpression network.
 CovCoExpNets can be installed with the following command:
 
 ``` r
-devtools::install_github("carmen-maria-hernandez/SuCoNets")
+devtools::install_github("guillermo1996/CovCoExpNets")
 ```
 
 # Example of use
@@ -29,7 +29,7 @@ Suppose we have an expression matrix, `data`, with blood samples as
 columns and genes as rows. Each sample is identified by the numerical
 values taken by the genes. The particular covariate we are going to
 study is the age of the samples’ donors, given in a numerical vector
-denotated as `age`.
+denoted as `age`.
 
 The hub gene detection algorithm is based on Lasso repetitions, where
 the random effects of highly correlated variables are reduced by
@@ -46,7 +46,7 @@ this process are shown in its respective tutorial ([Data
 preparation](docs/Data_preparation)). As a summary, the dataset is first
 transformed to a logarithmic scale. Then, we require a minimum
 activation of 0.1 in at least 80% of the samples, followed by the
-removall of all non protein coding genes and those with a low variation
+removal of all non-protein coding genes and those with a low variation
 across the samples. Lastly, we centralize and normalize the expression
 matrix. All of these steps are encompassed in the `dataPreprocess()`
 function, where every step can be individually modified or executed as
@@ -60,7 +60,7 @@ raw_data <- readRDS("raw_data.rds")
 data <- dataPreprocess(raw_data, includeSexChromosomes = T)
 ```
 
-As seen in the example, we can also filter by genes loacted in autosomal
+As seen in the example, we can also filter by genes located in autosomal
 chromosomes. The specific covariate to study, the age, also needs to be
 normalized with the `normalize()` function:
 
@@ -97,7 +97,7 @@ genes_subset <- reduceGenes(genes_freq, mrfa = 0.9, relative = T)
 ### Final model generation
 
 Once we have a first selection of relevant genes, we execute the
-function `glmnetGenesSubset()` to calcualte the final model and extract
+function `glmnetGenesSubset()` to calculate the final model and extract
 the relevant genes from
 it.
 
@@ -159,7 +159,7 @@ are found in the *docs* directory:
 This package is based on the package *glmnet*, available at the
 following URL:
 <https://cran.r-project.org/web/packages/glmnet/glmnet.pdf>. It is also
-a fork of the package *SuCoNets*, developed by Carmen María Hernandez
+a fork of the package *SuCoNets*, developed by Carmen María Hernandez.
 Both *CovCoExpNets* and *SuCoNets* have been supervised by both Juan A.
 Botía (Universidad de Murcia) (<https://github.com/juanbot>) and Alicia
 Gómez Pascual (Universidad de Murcia), who also contributed to its

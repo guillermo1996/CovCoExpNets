@@ -164,15 +164,15 @@ hp.metrics = foreach(row = 1:nrow(hp.df), .combine = "rbind") %do%{
 
 hp.metrics
 #>             Simulation   N    P   Q Precision Sensitivity Specificity
-#> Simulation           1 200 1000 100 0.3888889       0.490   0.9144444
+#> Simulation           1 200 1000 100 0.3566434       0.510   0.8977778
 #> Simulation1          2 300 1000 100 0.2985612       0.830   0.7833333
-#> Simulation2          3 200 1000 500 0.6326531       0.062   0.9640000
-#> Simulation3          4 300 1000 500 0.7714286       0.054   0.9840000
+#> Simulation2          3 200 1000 500 0.6458333       0.062   0.9660000
+#> Simulation3          4 300 1000 500 0.7435897       0.058   0.9800000
 #>             Jaccard.index Returned.predictors
-#> Simulation          0.126                 126
+#> Simulation          0.143                 143
 #> Simulation1         0.278                 278
-#> Simulation2         0.049                  49
-#> Simulation3         0.035                  35
+#> Simulation2         0.048                  48
+#> Simulation3         0.039                  39
 ```
 
 To properly execute this experiment, it is recommended to repeat each
